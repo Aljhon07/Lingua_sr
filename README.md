@@ -19,7 +19,7 @@ Includes callbacks for checkpointing and early stopping.
 Model Arhictecture and Training Configuration:
 
 1.  CNN
-2.  RNN (LSTM)
+2.  RNN (BiGRU)
 3.  Set up an optimizer (AdamW)
 4.  CTC Loss
 5.  Implement scheduler

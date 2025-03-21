@@ -7,11 +7,10 @@ import soundfile as sf
 from tools.extract_mel_features import extract_mel_features
 
 def preprocess_audio_files(input_tsv, audio_dir, output_dir, base_output_dir, target_length=500):
-  
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     data = []
-    
+    transcriptions = []
     df = pd.read_csv(input_tsv, sep='\t')  
     
     for index, row in df.iterrows():
@@ -35,6 +34,7 @@ def preprocess_audio_files(input_tsv, audio_dir, output_dir, base_output_dir, ta
             data.append((f"{file_name}_pitched", transcription))
             
             data.append((file_name, transcription))
+            transcriptions.append(transcription)
             print(f"Processed {file_name}: {transcription}")
             # sf.write(os.path.join(output_dir, f"{file_name}_noisy.wav"), noisy_audio, 16000)
             # sf.write(os.path.join(output_dir, f"{file_name}_stretched.wav"), stretched_audio, 16000)
@@ -42,4 +42,3 @@ def preprocess_audio_files(input_tsv, audio_dir, output_dir, base_output_dir, ta
 
     df_clean = pd.DataFrame(data, columns=['file_name', 'transcript'])
     a = df_clean.to_csv(os.path.join(base_output_dir, f'{config.STAGE}.tsv'), sep='\t', index=False)
-    print(a)

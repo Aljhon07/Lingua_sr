@@ -2,6 +2,7 @@ import librosa
 import numpy as np
 
 def extract_mel_features(audio, sr=16000, n_mels=80, hop_length=160, target_length=500):
+    """Extract Mel-spectrogram features from audio and pad or trim to fixed length."""
     y, _ = librosa.load(audio, sr=sr)
     # ascii_art = plot_waveform(y, sr)
     # print(ascii_art)

@@ -1,6 +1,6 @@
 import os
 import config
-from tools import preprocess
+from tools import preprocess, language_corpus as ls
 
 def main():
     print("Preprocessing Dataset")
@@ -8,10 +8,13 @@ def main():
         os.makedirs(output_dir)
         
     if not os.path.exists(audio_dir):
-        # Implement function that converts mp3 to wav - If there are no wav directory, select /clips instead then convert to wav
+        # Means no wav, select /clips instead then convert to wav
         pass
     
     preprocess.preprocess_audio_files(input_tsv, audio_dir, output_dir, base_output_dir)
+    ls.train_tokenizer(config.PATHS['common_voice'], base_output_dir, config.LANG)
+    ls.tokenize_tsv(f"{base_output_dir}/{config.STAGE}.tsv", f"{base_output_dir}/{config.LANG}.model")
+    # Initialize model here
     pass
         
 

@@ -77,7 +77,7 @@ def train():
     cnn_output_dim = 32
     cnn_output_dim2 = 64
     rnn_output_dim = 512
-    vocab_size = 5000 
+    vocab_size = 10000 
     dropout_prob = 0.2
     blank_id = 0
 
@@ -103,6 +103,7 @@ def train():
             output = model(features, input_length)
             output = F.log_softmax(output, dim=2)
             output = output.transpose(0, 1)
+            preds = torch.argmax(output.transpose(0, 1), dim=2)
             
             
             loss = criterion(output, transcriptions, input_length // 2, transcription_lengths)
@@ -132,15 +133,6 @@ def train():
         scheduler.step(epoch_loss)
 
 
-def predict_ctc(model, features, input_length):
-    model.eval()
-    with torch.no_grad():
-        output = model(features, input_length)
-        output = F.log_softmax(output, dim=2)
-        output = output.transpose(0, 1)
-        preds = torch.argmax(output.transpose(0, 1), dim=2)
-        return preds
-        
 def validate_feature_stats(feature_list, titles = ["Input", "CNN2"]):
     """
     Analyzes and visualizes a list of feature tensors in subplots.

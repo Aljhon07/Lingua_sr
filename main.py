@@ -1,20 +1,22 @@
 import os
 import config
-from tools import preprocess, language_corpus as ls
-
+from tools import preprocess, language_corpus as ls, load_data, dataset as ds
+from models import SimpleModel as model
 def main():
-    print("Preprocessing Dataset")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         
     if not os.path.exists(audio_dir):
         # Means no wav, select /clips instead then convert to wav
+        preprocess.convert_audio_to_wav(input_tsv, f"{config.PATHS["common_voice"]}/clips", audio_dir)
         pass
     
-    preprocess.preprocess_audio_files(input_tsv, audio_dir, output_dir, base_output_dir)
-    ls.train_tokenizer(config.PATHS['common_voice'], base_output_dir, config.LANG)
-    ls.tokenize_tsv(f"{base_output_dir}/{config.STAGE}.tsv", f"{base_output_dir}/{config.LANG}.model")
-    # Initialize model here
+    # preprocess.extract_data_from_tsv(input_tsv, output_dir, base_output_dir)
+    # ls.train_tokenizer(config.PATHS['common_voice'], base_output_dir, config.LANG)
+    # ls.tokenize_tsv(f"{base_output_dir}/{config.STAGE}.tsv", f"{base_output_dir}/{config.LANG}.model")
+    # load_data.load_data(config.PATHS['output'], f"{base_output_dir}/{config.STAGE}.tsv")
+    # data = ds.load_data(audio_dir, f"{base_output_dir}/{config.STAGE}.tsv")
+    model.train()
     pass
         
 

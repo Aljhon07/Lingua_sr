@@ -1,30 +1,32 @@
 import os
+from tools import tsv_extractor as te, audio, language_corpus as lc
+import pandas as pd
 import config
-from tools import preprocess, language_corpus as ls, load_data, dataset as ds
-from models import SimpleModel as model
-def main():
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        
-    if not os.path.exists(audio_dir):
-        # Means no wav, select /clips instead then convert to wav
-        preprocess.convert_audio_to_wav(input_tsv, f"{config.PATHS["common_voice"]}/clips", audio_dir)
-        pass
-    
-    # preprocess.extract_data_from_tsv(input_tsv, output_dir, base_output_dir)
-    # ls.train_tokenizer(config.PATHS['common_voice'], base_output_dir, config.LANG)
-    # ls.tokenize_tsv(f"{base_output_dir}/{config.STAGE}.tsv", f"{base_output_dir}/{config.LANG}.model")
-    # load_data.load_data(config.PATHS['output'], f"{base_output_dir}/{config.STAGE}.tsv")
-    # data = ds.load_data(audio_dir, f"{base_output_dir}/{config.STAGE}.tsv")
-    model.train()
-    pass
-        
-
-input_tsv = f'{config.PATHS['common_voice']}/{config.STAGE}.tsv'
-audio_dir = f'{config.PATHS['common_voice']}/wavs'
-base_output_dir = f'{config.PATHS["base_output"]}'
-output_dir = f'{config.PATHS["output"]}'
 
 if __name__ == '__main__':
-    main()
-    pass
+    language = config.LANGUAGE
+    common_voice_path = config.COMMON_VOICE_PATH
+    output_path = config.OUTPUT_PATH
+    wavs_path = config.WAVS_PATH
+    
+    tsv_files = ["validated.tsv", "train.tsv", "dev.tsv", "clean.tsv", "test.tsv"]
+    if os.path.exists(common_voice_path):
+        te.process_and_encode_common_voice(common_voice_path, tsv_files, f"{output_path}/{language}")
+
+    if not os.path.exists(wavs_path):
+        os.makedirs(wavs_path, exist_ok=True)
+        print(f"Directory {wavs_path} created.")
+        df = pd.read_csv(f"{output_path}/{language}.tsv", sep='\t')
+        file_names = df['file_name'].tolist()
+        audio.to_wav_batch(file_names, f"{common_voice_path}/clips" , wavs_path)
+    else:
+        print(f"Directory {wavs_path} already exists. Skipping.")
+
+
+    
+  
+
+
+
+    
+

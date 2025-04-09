@@ -104,7 +104,7 @@ def train():
             output = F.log_softmax(output, dim=2)
             output = output.transpose(0, 1)
             
-            
+            preds = torch.argmax(output, dim=2).transpose(0, 1)
             loss = criterion(output, transcriptions, input_length // 2, transcription_lengths)
             loss.backward()
             optimizer.step()

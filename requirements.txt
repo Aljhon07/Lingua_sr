@@ -11,7 +11,7 @@ audioread==3.0.1
 cfgv==3.4.0
 # charset-normalizer @ file:///croot/charset-normalizer_1721748349566/work
 clang-format==17.0.6
-# conda @ file:///croot/conda_1738168370816/work
+# conda @ file:///croot/conda_1738168370816/works
 # conda-anaconda-telemetry @ file:///croot/conda-anaconda-telemetry_1736524596117/work
 # conda-anaconda-tos @ file:///croot/conda-anaconda-tos_1739298990519/work
 # conda-content-trust @ file:///croot/conda-content-trust_1714483159009/work

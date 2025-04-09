@@ -10,12 +10,19 @@ def train(model_type='bpe', vocab_size=5000,model_prefix = config.LANGUAGE,):
         spm.SentencePieceTrainer.train(
             input=input_file,
             model_prefix=model_path,
-            vocab_size=vocab_size,
+            vocab_size=8000,
             model_type=model_type,
             character_coverage=1.0,
         )
         print(f"SentencePiece model trained successfully: {model_prefix}.model")
     except Exception as e:
+        spm.SentencePieceTrainer.train(
+            input=input_file,
+            model_prefix=model_path,
+            vocab_size=5000,
+            model_type=model_type,
+            character_coverage=1.0,
+        )
         print(f"Error training SentencePiece model: {e}")
 
 def encode(input_text):
@@ -24,7 +31,7 @@ def encode(input_text):
         sp = spm.SentencePieceProcessor(model_file=model_file)
         encoded = sp.encode(input_text, out_type=int) # or out_type=int for IDs
         encoded_str = sp.encode_as_pieces(input_text) # or out_type=str for pieces
-        return encoded, encoded_str
+        return ' '.join(map(str, encoded)), ' '.join(encoded_str)
     except Exception as e:
         print(f"Error encoding with SentencePiece: {e}")
         return None

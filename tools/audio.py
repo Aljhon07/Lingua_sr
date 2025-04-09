@@ -35,4 +35,3 @@ def to_wav_batch(file_names, input_dir, output_dir):
         print(f"Processing {input_file} to {output_file}")
         if os.path.exists(input_file): 
             to_wav(input_file, output_file)
-            print(f"Converted {input_file} to {output_file}")

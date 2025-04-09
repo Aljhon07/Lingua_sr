@@ -2,14 +2,20 @@ import os
 import csv
 from tools import language_corpus as lc
 import pandas as pd
+import config
+def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
 
-def process_and_encode_common_voice(common_voice_path, tsv_files, output_filename):
-
+    output_path = os.path.join(output_path, config.LANGUAGE)
     file_names = []
     transcriptions = []
     tokenized_transcriptions = []
     tokenized_transcriptions_str = []
 
+
+    if os.path.exists(output_path):
+        print(f"Output file {output_path} already exists. Skipping.")
+        return
+    
     for file in tsv_files:
         file_path = os.path.join(common_voice_path, file)
         if os.path.exists(file_path):
@@ -21,7 +27,7 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_filenam
                     transcriptions.append(row['sentence'])
 
     # Training the SentencePiece model
-    sentences_filename = output_filename + "_sentences.txt"
+    sentences_filename = output_path + "_sentences.txt"
     os.makedirs(os.path.dirname(sentences_filename), exist_ok=True)
     with open(sentences_filename, 'w', encoding='utf-8') as sentences_file:
         for transcript in transcriptions:
@@ -36,10 +42,10 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_filenam
     df_output = pd.DataFrame({
         'file_name': file_names,
         'transcription': transcriptions,
-        'encoded_ids': tokenized_transcriptions,
-        'encoded_pieces': tokenized_transcriptions_str
+        'tokenized_transcription': tokenized_transcriptions,
+        'tokenized_transcription_str': tokenized_transcriptions_str
     })
-    tsv_filename = output_filename + ".tsv"
+    tsv_filename = output_path + ".tsv"
 
     os.makedirs(os.path.dirname(tsv_filename), exist_ok=True)
 

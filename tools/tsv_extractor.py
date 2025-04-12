@@ -25,15 +25,14 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
                 if 'path' in row and 'sentence' in row:
                     file_names.append(row['path'].replace('.mp3', ''))
                     transcriptions.append(row['sentence'])
-
     # Training the SentencePiece model
     sentences_filename = output_path + "_sentences.txt"
     os.makedirs(os.path.dirname(sentences_filename), exist_ok=True)
     with open(sentences_filename, 'w', encoding='utf-8') as sentences_file:
         for transcript in transcriptions:
             sentences_file.write(transcript + '\n')
-    print(f"Transcriptions written to {sentences_filename}")
     lc.train()
+    print(f"Transcriptions written to {sentences_filename}")
 
     for transcription in transcriptions:
             encoded_ids, encoded_pieces = lc.encode(transcription)

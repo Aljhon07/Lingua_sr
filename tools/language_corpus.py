@@ -2,28 +2,18 @@ import os
 import sentencepiece as spm
 import config
 
-def train(model_type='bpe', vocab_size=5000,model_prefix = config.LANGUAGE,):
+def train(model_type='char', vocab_size=5000,model_prefix = config.LANGUAGE,):
     input_file = os.path.join(config.OUTPUT_PATH, config.LANGUAGE+"_sentences.txt")
     print(input_file)
     model_path = os.path.join(config.OUTPUT_PATH, model_prefix)
-    try:
-        spm.SentencePieceTrainer.train(
-            input=input_file,
-            model_prefix=model_path,
-            vocab_size=8000,
-            model_type=model_type,
-            character_coverage=1.0,
-        )
-        print(f"SentencePiece model trained successfully: {model_prefix}.model")
-    except Exception as e:
-        spm.SentencePieceTrainer.train(
-            input=input_file,
-            model_prefix=model_path,
-            vocab_size=5000,
-            model_type=model_type,
-            character_coverage=1.0,
-        )
-        print(f"Error training SentencePiece model: {e}")
+    spm.SentencePieceTrainer.train(
+        input=input_file,
+        model_prefix=model_path,
+        model_type=model_type,
+        character_coverage=1.0,
+    )
+    print(f"SentencePiece model trained successfully: {model_prefix}.model")
+
 
 def encode(input_text):
     

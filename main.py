@@ -1,15 +1,15 @@
 import os
 from tools import tsv_extractor as te, audio, language_corpus as lc
 from src import SpeechDataset as sd
-
+from src import SpeechRecognitionModel as model
 import pandas as pd
 import config
 
 if __name__ == '__main__':
-    # language = config.LANGUAGE
-    # common_voice_path = config.COMMON_VOICE_PATH
-    # output_path = config.OUTPUT_PATH
-    # wavs_path = config.WAVS_PATH
+    language = config.LANGUAGE
+    common_voice_path = config.COMMON_VOICE_PATH
+    output_path = config.OUTPUT_PATH
+    wavs_path = config.WAVS_PATH
     
     # tsv_files = ["validated.tsv", "train.tsv", "dev.tsv", "clean.tsv", "test.tsv"]
     # if os.path.exists(common_voice_path):
@@ -25,9 +25,9 @@ if __name__ == '__main__':
     #     print(f"Converted audio files to WAV format and saved in {wavs_path}.")
     # else:
     #     print(f"Directory {wavs_path} already exists. Skipping.")
-    sd.load_data()
 
-    
+
+    model.train()
   
 
 

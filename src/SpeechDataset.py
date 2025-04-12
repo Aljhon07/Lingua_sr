@@ -40,10 +40,14 @@ class SpeechDataset(Dataset):
             db_multiplier=1.0,  
             top_db=80.0           
         )
-    
+        features = features.contiguous()
+
         label = self.labels[idx]
         features_len = features.size(-1)
+        
         label_len = len(label)
+        features = features.squeeze(0)
+        features = features.transpose(0, 1)  # (T, C) -> (C, T)
         return features, label, features_len, label_len
     
     def _load_data_from_tsv(self):
@@ -65,13 +69,14 @@ class SpeechDataset(Dataset):
             print(f"Resampling {audio_path} to {self.sample_rate} Hz...")
             resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
             waveform = resampler(waveform)
+        
         return waveform
     
 
 
 def collate_fn(batch):
     features_batch, labels_batch, features_lens_batch, labels_lens_batch = zip(*batch)
-    
+
     padded_features_batch = nn.utils.rnn.pad_sequence(features_batch, batch_first=True, padding_value=-80)
     padded_labels_batch = nn.utils.rnn.pad_sequence([torch.tensor(label) for label in labels_batch], batch_first=True, padding_value=0)
     features_lens_batch = torch.tensor(features_lens_batch)
@@ -79,18 +84,28 @@ def collate_fn(batch):
     
     return padded_features_batch, padded_labels_batch, features_lens_batch, labels_lens_batch
 
+from torch.utils.data import random_split
+
 def load_data():
     dataset = SpeechDataset()
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=False, collate_fn=collate_fn)
+    
+    total_size = len(dataset)
+    quarter_size = total_size // 4
+    dataset_subset = torch.utils.data.Subset(dataset, range(quarter_size))
 
-    for i, (features, labels, features_len, labels_len) in enumerate(dataloader):
-        print(f"Batch {i+1}:")
-        print("Features shape:", features.shape)
-        print("Labels shape:", labels.shape)
-        print("Features length:", features_len)
-        print("Labels length:", labels_len)      
-        break 
+    train_size = int(0.8 * quarter_size)
+    val_size = quarter_size - train_size
+
+    train_dataset, val_dataset = random_split(dataset_subset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
+
+    
+    print(f"Train dataset size: {len(train_dataset)}")
+    print(f"Validation dataset size: {len(val_dataset)}")
+    
+    return train_loader, val_loader
 
 if __name__ == "__main__":
-    load_data()
-    
+    train_loader, val_loader = load_data()

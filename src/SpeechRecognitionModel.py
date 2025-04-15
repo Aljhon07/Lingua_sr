@@ -169,8 +169,10 @@ def train():
     vocab_size = 73
     total_epoch = 50
     
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, val_data = sd.load_data()
-    model = SpeechRecognitionModel(vocab_size, n_feats, in_channels, out_channels, rnn_dim)
+    model = SpeechRecognitionModel(vocab_size, n_feats, in_channels, out_channels, rnn_dim).to(device)
+    print(f"Using device: {device}")
     
     total_steps = len(train_data) * total_epoch
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
@@ -180,7 +182,6 @@ def train():
         total_steps=total_steps,
         anneal_strategy='linear')
 
-
     epoch_losses = []
     val_losses = []
     for epoch in range(total_epoch):
@@ -188,6 +189,8 @@ def train():
         model.train()
 
         for batch_idx, (features, labels, features_len, labels_len) in enumerate(train_data):
+            
+            features, labels = features.to(device), labels.to(device)
             
             optimizer.zero_grad()
             output = model(features.transpose(1, 2).contiguous(), features_len, verbose=False)
@@ -217,7 +220,8 @@ def train():
         with torch.no_grad():
             for features, labels, features_len, labels_len in val_data:
                 output = model(features.transpose(1, 2).contiguous(), features_len)
-
+                features, labels = features.to(device), labels.to(device)
+                
                 input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()
                 loss = criterion(input, labels, features_len, labels_len)
 

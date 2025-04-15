@@ -19,7 +19,7 @@ def encode(input_text):
     
     try:
         sp = spm.SentencePieceProcessor(model_file=model_file)
-        encoded = sp.encode(input_text, out_type=int) # or out_type=int for IDs
+        encoded = sp.encode_as_ids(input_text) # or out_type=int for IDs
         encoded_str = sp.encode_as_pieces(input_text) # or out_type=str for pieces
         return ' '.join(map(str, encoded)), ' '.join(encoded_str)
     except Exception as e:

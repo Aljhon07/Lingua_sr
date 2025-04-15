@@ -26,8 +26,8 @@ if __name__ == '__main__':
     # else:
     #     print(f"Directory {wavs_path} already exists. Skipping.")
 
-
     model.train()
+    
   
 
 

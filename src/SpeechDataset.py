@@ -6,6 +6,7 @@ import torchaudio
 import torchaudio.functional as F
 import config
 import os
+import matplotlib.pyplot as plt
 
 class SpeechDataset(Dataset):
     def __init__(self, sample_rate=16000):
@@ -17,9 +18,9 @@ class SpeechDataset(Dataset):
 
         self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
             sample_rate=sample_rate,
-            n_fft=400,              # window size
+            n_fft=400,            
             win_length=None,
-            hop_length=160,         # how much it shifts per frame (10ms)
+            hop_length=160,         
             n_mels=80
         )
         self._load_data_from_tsv()
@@ -29,26 +30,34 @@ class SpeechDataset(Dataset):
 
     def __getitem__(self, idx):
         audio_path = os.path.join(config.WAVS_PATH, self.audio_paths[idx] + ".wav")
-        waveform = self._load_audio(audio_path)
         
-        features = self.mel_spectrogram(waveform)
-
-        features = F.amplitude_to_DB(
-            features,
+        waveform = self._load_audio(audio_path).contiguous()
+        trimmed_spectogram = F.vad(waveform, self.sample_rate)
+        if trimmed_spectogram.numel() == 0:
+             trimmed_spectogram = waveform
+        orig_spectogram = self.mel_spectrogram(trimmed_spectogram).contiguous()
+        orig_spectogram = F.amplitude_to_DB(
+            orig_spectogram,
             multiplier=10.0,      
             amin=1e-10,         
             db_multiplier=1.0,  
             top_db=80.0           
         )
-        features = features.contiguous()
-
+        spectogram = orig_spectogram.contiguous()
         label = self.labels[idx]
-        features_len = features.size(-1)
-        
+        features_len = spectogram.size(-1)
         label_len = len(label)
-        features = features.squeeze(0)
-        features = features.transpose(0, 1)  # (T, C) -> (C, T)
-        return features, label, features_len, label_len
+        
+        spectogram = spectogram.squeeze(0)
+        spectogram = (spectogram - spectogram.mean(dim=1, keepdim=True)) / (spectogram.std(dim=1, keepdim=True)+ 1e-8)
+        spectogram = spectogram.transpose(0, 1).contiguous()
+        return spectogram, label, features_len, label_len
+    
+    def normalize(self, waveform):
+        mean = waveform.mean()
+        std = waveform.std()
+        waveform = (waveform - mean) / (std + 1e-8)
+        return waveform
     
     def _load_data_from_tsv(self):
         if not os.path.exists(self.tsv_file):
@@ -70,13 +79,14 @@ class SpeechDataset(Dataset):
             resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
             waveform = resampler(waveform)
         
+        
         return waveform
     
 
 
 def collate_fn(batch):
     features_batch, labels_batch, features_lens_batch, labels_lens_batch = zip(*batch)
-
+        
     padded_features_batch = nn.utils.rnn.pad_sequence(features_batch, batch_first=True, padding_value=-80)
     padded_labels_batch = nn.utils.rnn.pad_sequence([torch.tensor(label) for label in labels_batch], batch_first=True, padding_value=0)
     features_lens_batch = torch.tensor(features_lens_batch)
@@ -90,7 +100,7 @@ def load_data():
     dataset = SpeechDataset()
     
     total_size = len(dataset)
-    quarter_size = total_size // 4
+    quarter_size = 100
     dataset_subset = torch.utils.data.Subset(dataset, range(quarter_size))
 
     train_size = int(0.8 * quarter_size)
@@ -101,10 +111,10 @@ def load_data():
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
 
-    
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Validation dataset size: {len(val_dataset)}")
-    
+         
+         
     return train_loader, val_loader
 
 if __name__ == "__main__":

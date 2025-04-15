@@ -38,6 +38,7 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
             encoded_ids, encoded_pieces = lc.encode(transcription)
             tokenized_transcriptions.append(encoded_ids)
             tokenized_transcriptions_str.append(encoded_pieces)   
+
     df_output = pd.DataFrame({
         'file_name': file_names,
         'transcription': transcriptions,

@@ -1,12 +1,15 @@
-from torch.utils.data import Dataset, DataLoader
-import pandas as pd
-import torch.nn as nn
 import torch
 import torchaudio
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader, random_split
 import torchaudio.functional as F
-import config
-import os
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import os
+import librosa
+import config
+from time import sleep
 
 class SpeechDataset(Dataset):
     def __init__(self, sample_rate=16000):
@@ -19,10 +22,13 @@ class SpeechDataset(Dataset):
         self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
             sample_rate=sample_rate,
             n_fft=400,            
-            win_length=None,
+            win_length=400,
             hop_length=160,         
-            n_mels=80
+            n_mels=80,
+            normalized=True,
         )
+        
+        self.amplitude = torchaudio.transforms.AmplitudeToDB(stype='power', top_db=80)
         self._load_data_from_tsv()
         
     def __len__(self):
@@ -30,34 +36,50 @@ class SpeechDataset(Dataset):
 
     def __getitem__(self, idx):
         audio_path = os.path.join(config.WAVS_PATH, self.audio_paths[idx] + ".wav")
-        
+        # audio_path = os.path.join(config.WAVS_PATH, "common_voice_en_41435787.wav")
         waveform = self._load_audio(audio_path).contiguous()
         trimmed_spectogram = F.vad(waveform, self.sample_rate)
         if trimmed_spectogram.numel() == 0:
              trimmed_spectogram = waveform
-        orig_spectogram = self.mel_spectrogram(trimmed_spectogram).contiguous()
-        orig_spectogram = F.amplitude_to_DB(
-            orig_spectogram,
-            multiplier=10.0,      
-            amin=1e-10,         
-            db_multiplier=1.0,  
-            top_db=80.0           
-        )
-        spectogram = orig_spectogram.contiguous()
+        orig_spectrogram = self.mel_spectrogram(waveform).contiguous()
+        orig_spectrogram = self.amplitude(orig_spectrogram)
+
+
+        spectrogram = orig_spectrogram.contiguous()
         label = self.labels[idx]
-        features_len = spectogram.size(-1)
+        features_len = spectrogram.size(-1)
         label_len = len(label)
         
-        spectogram = spectogram.squeeze(0)
-        spectogram = (spectogram - spectogram.mean(dim=1, keepdim=True)) / (spectogram.std(dim=1, keepdim=True)+ 1e-8)
-        spectogram = spectogram.transpose(0, 1).contiguous()
-        return spectogram, label, features_len, label_len
-    
-    def normalize(self, waveform):
-        mean = waveform.mean()
-        std = waveform.std()
-        waveform = (waveform - mean) / (std + 1e-8)
-        return waveform
+        if spectrogram.min() < -80 or spectrogram.max() > 80:
+            spectrogram = torch.clamp(spectrogram, min=-80, max=80)
+            sleep(0.5)
+            # self.plot_original_vs_normalized(spectrogram, clipped_spectrogram)
+            # raise ValueError(f"Spectrogram values out of range: {spectrogram.min()} to {spectrogram.max()}")
+        
+        spectrogram = spectrogram.squeeze(0).transpose(0, 1).contiguous()
+        return spectrogram, label, features_len, label_len
+
+    def plot_original_vs_normalized(self, original_spectrogram, normalized_spectrogram):
+        """Plots the original and normalized spectrograms side-by-side."""
+
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))  # 1 row, 2 columns
+
+        # Original Spectrogram
+        im1 = axes[0].imshow(original_spectrogram.squeeze(0), cmap='inferno', origin='lower', aspect='auto', interpolation='none')
+        axes[0].set_title("Original Mel Spectrogram")
+        axes[0].set_ylabel("Frequency (Mel Bands)")
+        axes[0].set_xlabel("Time (Frames)")
+        fig.colorbar(im1, ax=axes[0])  # Use default colorbar for original
+
+        # Normalized Spectrogram
+        im2 = axes[1].imshow(normalized_spectrogram.squeeze(0), cmap='inferno', origin='lower', aspect='auto', interpolation='none')
+        axes[1].set_title("Normalized Mel Spectrogram")
+        axes[1].set_ylabel("Frequency (Mel Bands)")
+        axes[1].set_xlabel("Time (Frames)")
+        fig.colorbar(im2, ax=axes[1])
+
+        plt.tight_layout()
+        plt.show()
     
     def _load_data_from_tsv(self):
         if not os.path.exists(self.tsv_file):
@@ -86,7 +108,7 @@ class SpeechDataset(Dataset):
 
 def collate_fn(batch):
     features_batch, labels_batch, features_lens_batch, labels_lens_batch = zip(*batch)
-        
+
     padded_features_batch = nn.utils.rnn.pad_sequence(features_batch, batch_first=True, padding_value=-80)
     padded_labels_batch = nn.utils.rnn.pad_sequence([torch.tensor(label) for label in labels_batch], batch_first=True, padding_value=0)
     features_lens_batch = torch.tensor(features_lens_batch)
@@ -94,13 +116,12 @@ def collate_fn(batch):
     
     return padded_features_batch, padded_labels_batch, features_lens_batch, labels_lens_batch
 
-from torch.utils.data import random_split
 
 def load_data():
     dataset = SpeechDataset()
     
     total_size = len(dataset)
-    quarter_size = 100
+    quarter_size = 1000
     dataset_subset = torch.utils.data.Subset(dataset, range(quarter_size))
 
     train_size = int(0.8 * quarter_size)
@@ -113,8 +134,8 @@ def load_data():
 
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Validation dataset size: {len(val_dataset)}")
-         
-         
+
+     
     return train_loader, val_loader
 
 if __name__ == "__main__":

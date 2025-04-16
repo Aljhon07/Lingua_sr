@@ -29,67 +29,32 @@ class CNNLayerNorm(nn.Module):
             print(f"Permuted Stride: {x.stride()}")
             
         return x
-class CNN(nn.Module):
-    def __init__(self, n_feats, in_channels, out_channels, kernel_size, stride=1, padding=0, dropout=0.2):
-        super(CNN, self).__init__()
-
-        self.cnn1 = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.cnn2 = nn.Conv2d(out_channels, out_channels * 2, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.layer_norm1 = CNNLayerNorm(out_channels)
-        self.layer_norm2 = CNNLayerNorm(out_channels * 2)
-        
-        self.gelu_1 = nn.GELU()
-        self.gelu_2 = nn.GELU()
-        
-        self.dropout = nn.Dropout(dropout)
-        self.dropout2 = nn.Dropout(dropout)
-        
-    def forward(self, x, verbose):
-        x = self.cnn1(x)
-        if verbose:
-            print(f"CNN 1: Shape: {x.shape}")
-            print(f"CNN 1: Stride: {x.stride()}")
-        x = self.layer_norm1(x, verbose)
-        x = self.gelu_1(x)
-     
-        x = self.dropout(x)
-        
-        x = self.cnn2(x)
-        if verbose:
-            print(f"CNN 2:  Shape: {x.shape}")
-            print(f"CNN 2: Stride: {x.stride()}")
-            
-        x = self.layer_norm2(x, verbose)
-        x = self.gelu_2(x)
-        if verbose:
-            print(f"GELU Shape: {x.shape}")
-            print(f"GELU Stride: {x.stride()}")
-        x = self.dropout2(x)
-        
-        return x
     
-class Classifier(nn.Module):
-    def __init__(self, input_dim, output_dim, n_class, dropout=0.1):
-        super(Classifier, self).__init__()
-        self.linear1 = nn.Linear(input_dim, output_dim)
+class Conv2dBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dropout=0.2):
+        super(Conv2dBlock, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.layer_norm = CNNLayerNorm(out_channels)
         self.gelu = nn.GELU()
         self.dropout = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(output_dim, n_class)
-        
-    def forward(self, x, verbose):
-        x = self.linear1(x)
+
+    def forward(self, x, verbose=True):
+        x = self.conv(x)
         if verbose:
-            print(f"Linear 1 Shape: {x.shape}")
-            print(f"Linear 1 Stride: {x.stride()}")
-            
+            print(f"Conv Shape: {x.shape}")
+            print(f"Conv Stride: {x.stride()}")
+        x = self.layer_norm(x, verbose)
+        if verbose:
+            print(f"Layer Norm Min: {x.min()} / Max: {x.max()}")
+            # print(f"Layer Norm: {x}")
         x = self.gelu(x)
-        x = self.dropout(x)
-        x = self.linear2(x)
         if verbose:
-            print(f"Linear 2 Shape: {x.shape}")
-            print(f"Linear 2 Stride: {x.stride()}")
-        return x 
+            dead_ratio = (x == 0).float().mean().item()
+            print(f"{dead_ratio:.1%} dead neurons")
+        x = self.dropout(x)
+        return x
     
+
 class BidirectionalGRU(nn.Module):
     def __init__(self,input_dim = 256,  rnn_dim = 256, num_layers=1, dropout=0.1):
         super(BidirectionalGRU, self).__init__()
@@ -107,8 +72,8 @@ class BidirectionalGRU(nn.Module):
             
         packed_out, _ = self.gru(packed_x)
         if verbose:
-            print(f"Packed Out Shape: {packed_out.data.shape}")
-            print(f"Packed Out Stride: {packed_out.data.stride()}")
+            print(f"GRU Shape: {packed_out.data.shape}")
+            print(f"GRU Stride: {packed_out.data.stride()}")
             print(f"Lengths: {lengths}")
         x, _ = pad_packed_sequence(packed_out, batch_first=True)
         if verbose:
@@ -119,28 +84,51 @@ class BidirectionalGRU(nn.Module):
         x = self.dropout(x)
         return x
     
+class Classifier(nn.Module):
+    def __init__(self, input_dim, output_dim, n_class, dropout=0.1):
+        super(Classifier, self).__init__()
+        self.linear1 = nn.Linear(input_dim, output_dim)
+        self.gelu = nn.GELU()
+        self.dropout = nn.Dropout(dropout)
+        self.linear2 = nn.Linear(output_dim, n_class)
+    def forward(self, x, verbose):
+        x = self.linear1(x)
+        if verbose:
+            print(f"Linear 1 Shape: {x.shape}")
+            print(f"Linear 1 Stride: {x.stride()}")
+        x = self.gelu(x)
+        x = self.dropout(x)
+        x = self.linear2(x)
+        if verbose:
+            print(f"Linear 2 Shape: {x.shape}")
+            print(f"Linear 2 Stride: {x.stride()}")
+        return x 
+       
 class SpeechRecognitionModel(nn.Module):
-    def __init__(self, n_class, n_feats, in_channels, out_channels, rnn_dim, rnn_num_layers=2, dropout_rate=0.1):
+    def __init__(self, n_class, n_feats, in_channels, out_channels, rnn_dim, rnn_num_layers=2, dropout_rate=0.2):
         super(SpeechRecognitionModel, self).__init__()
         
-        self.cnn = CNN(n_feats, 1, out_channels, kernel_size=(3, 3), stride=1, padding=1)
-        self.fully_connected = nn.Linear((out_channels * 2) * 80, 512) 
-        self.gru = BidirectionalGRU(input_dim=512, rnn_dim=rnn_dim, num_layers=rnn_num_layers, dropout=dropout_rate)
+        out_channels_2 = out_channels * 2
+        out_channels_3 = out_channels_2 * 2
+        self.conv1 = Conv2dBlock(in_channels, out_channels, kernel_size=(5, 5), stride=(1, 1), padding="same", dropout=dropout_rate)
+        self.conv2 = Conv2dBlock(out_channels, out_channels_2, kernel_size=(3, 3), stride=(1, 1), padding="same", dropout=dropout_rate)
+        self.conv3 = Conv2dBlock(out_channels_2, out_channels_3, kernel_size=(3, 3), stride=(1, 1), padding="same", dropout=dropout_rate)
+
+        self.fully_connected = nn.Linear(out_channels_3 * 80, 512)
+         
+        self.gru = BidirectionalGRU(input_dim=512, rnn_dim=rnn_dim, num_layers=3, dropout=dropout_rate)
         
-        self.classifier = Classifier(input_dim=rnn_dim * 2, output_dim=512, n_class=n_class, dropout=dropout_rate)
+        self.classifier = Classifier(input_dim=rnn_dim * 2, output_dim=512, n_class=n_class, dropout=0.5)
         
     def forward(self, x, lengths, verbose=True):
         if verbose:
             print(f"Input Shape: {x.shape}")
             print(f"Input Stride: {x.stride()}")
         
+        x = self.conv1(x, verbose)
+        x = self.conv2(x, verbose)
+        x = self.conv3(x, verbose)
         
-        x = x.unsqueeze(1)
-        if verbose:
-            print(f"After Unsqueeze Shape: {x.shape}")
-            print(f"After Unsqueeze Stride: {x.stride()}")
-        
-        x = self.cnn(x, verbose)
         x = x.permute(0, 3, 1, 2).contiguous()
         if verbose:
             print(f"After Permute Shape: {x.shape}")
@@ -162,13 +150,18 @@ class SpeechRecognitionModel(nn.Module):
         return x
 
 def train():
+    
+    log_file = os.path.join(config.LOG_DIR, f"{config.LANGUAGE}.log")
     n_feats = 80
     in_channels = 1
     out_channels = 32
     rnn_dim = 256
-    vocab_size = 73
-    total_epoch = 50
+    vocab_size = 29
+    total_epoch = 100
     
+    if not os.path.exists(config.LOG_DIR):
+        os.makedirs(config.LOG_DIR)
+        
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data, val_data = sd.load_data()
     model = SpeechRecognitionModel(vocab_size, n_feats, in_channels, out_channels, rnn_dim).to(device)
@@ -176,7 +169,7 @@ def train():
     
     total_steps = len(train_data) * total_epoch
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    optimizer = optim.AdamW(model.parameters(), lr=0.001)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0005, weight_decay = 0.01)
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer,
         max_lr=0.1,
         total_steps=total_steps,
@@ -184,56 +177,78 @@ def train():
 
     epoch_losses = []
     val_losses = []
-    for epoch in range(total_epoch):
-        epoch_loss = 0.0
-        model.train()
 
-        for batch_idx, (features, labels, features_len, labels_len) in enumerate(train_data):
-            
-            features, labels = features.to(device), labels.to(device)
-            
-            optimizer.zero_grad()
-            output = model(features.transpose(1, 2).contiguous(), features_len, verbose=False)
-            input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()  
-            loss = criterion(input, labels, features_len, labels_len)
-            
-            loss.backward()
-            optimizer.step()
-            
-            preds = torch.argmax(output, dim=-1)
-
-            epoch_loss += loss.item()
-            print(f"\n[Batch {batch_idx+1} / {len(train_data)}] Loss: {loss.item():.4f}")
-            if batch_idx == 0:
-                print(f"Output Shape: {output.shape}")
-                print("Features Length: ", features_len.shape)
-                print(f"Input Shape: {input.shape}")
-                print(f"Input Stride: {input.stride()}")
-                print(f"Predicted Shape: {preds.shape}")
-                print(f"Predicted Stride: {preds.stride()}")
-            print(f"Target: {labels[1].tolist()} \nPredicted: {ctc_decoder(preds[1].tolist())}")
-        scheduler.step(epoch_loss / len(train_data))
-        
-        model.eval()
-        val_loss = 0.0
-
-        with torch.no_grad():
-            for features, labels, features_len, labels_len in val_data:
-                output = model(features.transpose(1, 2).contiguous(), features_len)
+    with open(log_file, 'a') as f:
+        f.write(f"Training {config.LANGUAGE}\n")
+        f.write(f"Using device: {device}\n")
+        for epoch in range(total_epoch):
+            epoch_loss = 0.0
+            model.train()
+            f.write("="* 100)
+            f.write(f"\n[Epoch {epoch+1}]\n")
+            f.write("="* 100 + "\n")
+            for batch_idx, (features, labels, features_len, labels_len) in enumerate(train_data):
+                optimizer.zero_grad()
+                print(f"[Batch {batch_idx+1} / {len(train_data)}]\n")
+                f.write(f"[Batch {batch_idx+1} / {len(train_data)}]\n")
                 features, labels = features.to(device), labels.to(device)
                 
-                input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()
+                features = features.unsqueeze(1)
+                features = features.transpose(2, 3).contiguous()
+                def gradient_hook(module, grad_input, grad_output):
+                    print(f"Gradient input mean: {grad_input[0].abs().mean():.4f}")
+                    print(f"Gradient output mean: {grad_output[0].abs().mean():.4f}")
+
+                layer = model.conv3  
+                layer.register_full_backward_hook(gradient_hook)
+                output = model(features, features_len, verbose=False)
+                input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()  
                 loss = criterion(input, labels, features_len, labels_len)
+                
+                loss.backward()
+                optimizer.step()
+                
+                preds = torch.argmax(output, dim=-1)
 
-                val_loss += loss.item()
+                epoch_loss += loss.item()
+                print(f"\n[Batch {batch_idx+1} / {len(train_data)}] Loss: {loss.item():.4f}")
+                f.write(f"Batch Loss: {loss.item():.4f}\n")
+                if batch_idx == 0:
+                    print(f"Output Shape: {output.shape}")
+                    print("Features Length: ", features_len.shape)
+                    print(f"Input Shape: {input.shape}")
+                    print(f"Input Stride: {input.stride()}")
+                    print(f"Predicted Shape: {preds.shape}")
+                    print(f"Predicted Stride: {preds.stride()}")
+                print(f"Target: {labels[1].tolist()} \nPredicted: {preds[1].tolist()}")
+                f.write(f"Target: {labels[1].tolist()} \nPredicted: {preds[1].tolist()}")
+                f.write("\n"+"-"* 100 + "\n")
+            scheduler.step(epoch_loss / len(train_data))
+            model.eval()
+            val_loss = 0.0
 
-        epoch_loss /= len(train_data)
-        val_loss /= len(val_data)
-        print(f"\n[Epoch {epoch+1}] Loss: {epoch_loss:.4f} / Val Loss: {val_loss:.4f}")
-        val_losses.append(f"{val_loss:.3f}")
-        epoch_losses.append(f"{epoch_loss:.3f}")
-        print("Epoch Losses: ", epoch_losses)
-        print("Validation Losses: ", val_losses)
+            with torch.no_grad():
+                print("Validating...")
+                for features, labels, features_len, labels_len in val_data:
+                    features, labels = features.to(device), labels.to(device)
+                    features = features.unsqueeze(1)
+                    features = features.transpose(2, 3).contiguous()
+
+                    output = model(features, features_len)
+                    
+                    input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()
+                    loss = criterion(input, labels, features_len, labels_len)
+
+                    val_loss += loss.item()
+
+            epoch_loss /= len(train_data)
+            val_loss /= len(val_data)
+            print(f"\n[Epoch {epoch+1}] Loss: {epoch_loss:.4f} / Val Loss: {val_loss:.4f}")
+            f.write(f"[Epoch {epoch+1}] Loss: {epoch_loss:.4f} / Val Loss: {val_loss:.4f}\n")
+            val_losses.append(f"{val_loss:.3f}")
+            epoch_losses.append(f"{epoch_loss:.3f}")
+            print("Epoch Losses: ", epoch_losses)
+            print("Validation Losses: ", val_losses)
         
 
 

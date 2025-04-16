@@ -14,7 +14,6 @@ def train(model_type='char', vocab_size=5000,model_prefix = config.LANGUAGE,):
     )
     print(f"SentencePiece model trained successfully: {model_prefix}.model")
 
-
 def encode(input_text):
     
     try:

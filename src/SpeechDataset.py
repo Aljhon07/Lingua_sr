@@ -23,11 +23,10 @@ class SpeechDataset(Dataset):
         self.string_labels = []
         self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
             sample_rate=sample_rate,
-            n_fft=400,            
-            win_length=400,
-            hop_length=160,         
             n_mels=80,
-            normalized=True,
+            n_fft=400,
+            win_length=400,
+            hop_length=160,
         )
         
         self.freq_mask = torchaudio.transforms.FrequencyMasking(freq_mask_param=15)
@@ -51,7 +50,7 @@ class SpeechDataset(Dataset):
         # print(f"Min: {self.spectrograms[idx].min()} / Max: {self.spectrograms[idx].max()} / Mean: {self.spectrograms[idx].mean()} / Std: {self.spectrograms[idx].std()}")
         
               
-        return self.spectrograms[idx], torch.tensor(label), features_len, label_len, self.string_labels[idx], self.audio_paths[idx]
+        return self.spectrograms[idx], torch.tensor(label, dtype=torch.long), features_len, label_len, self.string_labels[idx], self.audio_paths[idx]
 
     def _load_data_from_tsv(self):
         if not os.path.exists(self.tsv_file):
@@ -101,7 +100,7 @@ class SpeechDataset(Dataset):
             resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
             waveform = resampler(waveform)
         waveform = waveform.contiguous()
-        print(f"Waveform Stats: Min: {waveform.min()} / Max: {waveform.max()} / Mean: {waveform.mean()} / Std: {waveform.std()}")
+        # print(f"Waveform Stats: Min: {waveform.min()} / Max: {waveform.max()} / Mean: {waveform.mean()} / Std: {waveform.std()}")
             
         trimmed_waveform = F.vad(waveform, self.sample_rate)
         trimmed_duration = trimmed_waveform.size(1) / self.sample_rate
@@ -123,15 +122,16 @@ class SpeechDataset(Dataset):
             initial_spectrogram = self.freq_mask(initial_spectrogram).contiguous()
             initial_spectrogram = self.time_mask(initial_spectrogram).contiguous()
         
-        initial_spectrogram = self.amplitude(initial_spectrogram)
+        # initial_spectrogram = self.amplitude(initial_spectrogram)
         
         spectrogram = initial_spectrogram.contiguous()
+        print(f"Spectrogram Shape: {spectrogram.shape}")
         # print(f"Spectrogram Stats: Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
         spectrogram_min = spectrogram.min()
         spectrogram_max = spectrogram.max()
 
         # Normalize the spectrogram
-        spectrogram = (spectrogram - spectrogram_min) / (spectrogram_max - spectrogram_min)
+        spectrogram = (spectrogram - spectrogram_min) / (spectrogram_max - spectrogram_min + 1e-6)
         # print(f"Normalize Stats: Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
         # print(f"Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
         
@@ -225,18 +225,14 @@ def plot_comparison(padded, unpadded, sample_idx=0):
 def collate_fn(batch):
     features_batch, labels_batch, features_lens_batch, labels_lens_batch, string_labels, audio_paths = zip(*batch)
 
-    for idx in range(len(features_batch)):
-        print(f"Audio Path: {audio_paths[idx]} / Label: {string_labels[idx]} / Features Shape: {features_batch[idx].shape}")
-        break
-
     # padded_features_batch = nn.utils.rnn.pad_sequence(features_batch, batch_first=True , padding_value=0)
-    # padded_labels_batch = nn.utils.rnn.pad_sequence([torch.tensor(label) for label in labels_batch], batch_first=True, padding_value=0)
+    padded_labels_batch = nn.utils.rnn.pad_sequence(labels_batch, batch_first=True, padding_value=0)
     features_batch = torch.stack(features_batch, dim=0)  # [Batch, Time, Mel]
-    flattened_labels = torch.tensor([label for seq in labels_batch for label in seq])
-    features_lens_batch = torch.tensor(features_lens_batch)
-    labels_lens_batch = torch.tensor(labels_lens_batch)
+    # flattened_labels = torch.tensor([label for seq in labels_batch for label in seq])
+    features_lens_batch = torch.tensor(features_lens_batch, dtype=torch.long)
+    labels_lens_batch = torch.tensor(labels_lens_batch, dtype=torch.long)
     # plot_comparison(padded_features_batch, features_batch ,sample_idx=0)
-    return features_batch, flattened_labels, features_lens_batch, labels_lens_batch
+    return features_batch, padded_labels_batch, features_lens_batch, labels_lens_batch, string_labels, audio_paths
 
 def load_data():
     dataset = SpeechDataset()
@@ -250,18 +246,18 @@ def load_data():
 
     train_dataset, val_dataset = random_split(dataset_subset, [train_size, val_size])
     
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
 
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Validation dataset size: {len(val_dataset)}")
 
-    for batch_idx, (features, labels, features_len, labels_len) in enumerate(train_loader):
-        print(f"Features Shape: {features.shape}")
-        print(f"Labels: {labels[:25]} / {labels.shape}")
-        print(f"Features Length: {features_len} / {features_len.shape}")
-        print(f"Labels Length: {labels_len} / {labels_len.shape}")
-        break 
+    # for batch_idx, (features, labels, features_len, labels_len, _, _) in enumerate(train_loader):
+        # print(f"Features: {features.shape}")
+        # print(f"Labels: Shape: {labels.shape} / {labels}")
+        # print(f"Features Length: {features_len} / {features_len.shape}")
+        # print(f"Labels Length: {labels_len} / {labels_len.shape}")
+        # break 
     return train_loader, val_loader
 
 if __name__ == "__main__":

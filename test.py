@@ -46,6 +46,7 @@ for epoch in range(100):
     input = torch.nn.functional.log_softmax(outputs, dim=-1)  # (T, B, C)
     loss = criterion(input, targets, input_lengths, target_lengths)
     loss.backward()
+
     optimizer.step()
 
     print(f"\n[Epoch {epoch+1}] Loss: {loss.item():.4f}")
@@ -61,5 +62,4 @@ for epoch in range(100):
         offset += length
 
     # Print predictions vs targets
-    if (epoch + 1) % 20 == 0:
-        print(f"Sample {1} - Target: {targets[1]}, Raw Prediction: {pred_raw[1].tolist()}")
+    print(f"Sample {1} - Target: {targets[1]}, Raw Prediction: {pred_raw[1].tolist()}")

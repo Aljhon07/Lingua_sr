@@ -35,7 +35,7 @@ class Conv2dBlock(nn.Module):
         super(Conv2dBlock, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
         self.layer_norm = CNNLayerNorm(out_channels)
-        self.gelu = nn.GELU()
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, verbose=True):
@@ -47,7 +47,7 @@ class Conv2dBlock(nn.Module):
         if verbose:
             print(f"Layer Norm Min: {x.min()} / Max: {x.max()}")
             # print(f"Layer Norm: {x}")
-        x = self.gelu(x)
+        x = self.relu(x)
         if verbose:
             dead_ratio = (x == 0).float().mean().item()
             print(f"{dead_ratio:.1%} dead neurons")
@@ -60,7 +60,7 @@ class BidirectionalGRU(nn.Module):
         super(BidirectionalGRU, self).__init__()
 
         self.gru = nn.GRU(input_dim, rnn_dim, num_layers=num_layers, batch_first=True, bidirectional=True)
-        self.gelu = nn.GELU()
+        self.relu = nn.ReLU()
         self.layer_norm = nn.LayerNorm(rnn_dim * 2)
         self.dropout = nn.Dropout(dropout)
         
@@ -80,7 +80,8 @@ class BidirectionalGRU(nn.Module):
             print(f"Unpacked Shape: {x.shape}")
             print(f"Unpacked Stride: {x.stride()}")
             print(f"Unpacked (contiguous): {x.is_contiguous()}")
-        x = self.gelu(x)
+        x = self.layer_norm(x)
+        x = self.relu(x)
         x = self.dropout(x)
         return x
     
@@ -88,7 +89,8 @@ class Classifier(nn.Module):
     def __init__(self, input_dim, output_dim, n_class, dropout=0.1):
         super(Classifier, self).__init__()
         self.linear1 = nn.Linear(input_dim, output_dim)
-        self.gelu = nn.GELU()
+        self.layer_norm = nn.LayerNorm(output_dim)
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(output_dim, n_class)
     def forward(self, x, verbose):
@@ -96,7 +98,8 @@ class Classifier(nn.Module):
         if verbose:
             print(f"Linear 1 Shape: {x.shape}")
             print(f"Linear 1 Stride: {x.stride()}")
-        x = self.gelu(x)
+        x = self.layer_norm(x)
+        x = self.relu(x)
         x = self.dropout(x)
         x = self.linear2(x)
         if verbose:
@@ -113,10 +116,10 @@ class SpeechRecognitionModel(nn.Module):
         self.conv1 = Conv2dBlock(in_channels, out_channels, kernel_size=(5, 5), stride=(1, 1), padding="same", dropout=dropout_rate)
         self.conv2 = Conv2dBlock(out_channels, out_channels_2, kernel_size=(3, 3), stride=(1, 1), padding="same", dropout=dropout_rate)
         self.conv3 = Conv2dBlock(out_channels_2, out_channels_3, kernel_size=(3, 3), stride=(1, 1), padding="same", dropout=dropout_rate)
-
+        
         self.fully_connected = nn.Linear(out_channels_3 * 80, 512)
          
-        self.gru = BidirectionalGRU(input_dim=512, rnn_dim=rnn_dim, num_layers=3, dropout=dropout_rate)
+        self.gru = BidirectionalGRU(input_dim=512, rnn_dim=rnn_dim, num_layers=2, dropout=dropout_rate)
         
         self.classifier = Classifier(input_dim=rnn_dim * 2, output_dim=512, n_class=n_class, dropout=0.5)
         
@@ -134,7 +137,7 @@ class SpeechRecognitionModel(nn.Module):
             print(f"After Permute Shape: {x.shape}")
             print(f"After Permute Stride: {x.stride()}")
         
-        x = x.view(x.size(0), x.size(1), -1)  # (batch, channel, feature * time)
+        x = x.view(x.size(0), x.size(1), -1)
         if verbose:
             print(f"After View Shape: {x.shape}")
             print(f"After View Stride: {x.stride()}")
@@ -169,9 +172,9 @@ def train():
     
     total_steps = len(train_data) * total_epoch
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    optimizer = optim.AdamW(model.parameters(), lr=0.0005, weight_decay = 0.01)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.01)
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer,
-        max_lr=0.1,
+        max_lr=0.01,
         total_steps=total_steps,
         anneal_strategy='linear')
 
@@ -187,41 +190,51 @@ def train():
             f.write("="* 100)
             f.write(f"\n[Epoch {epoch+1}]\n")
             f.write("="* 100 + "\n")
+            
             for batch_idx, (features, labels, features_len, labels_len) in enumerate(train_data):
-                optimizer.zero_grad()
                 print(f"[Batch {batch_idx+1} / {len(train_data)}]\n")
                 f.write(f"[Batch {batch_idx+1} / {len(train_data)}]\n")
                 features, labels = features.to(device), labels.to(device)
-                
                 features = features.unsqueeze(1)
                 features = features.transpose(2, 3).contiguous()
-                def gradient_hook(module, grad_input, grad_output):
-                    print(f"Gradient input mean: {grad_input[0].abs().mean():.4f}")
-                    print(f"Gradient output mean: {grad_output[0].abs().mean():.4f}")
 
-                layer = model.conv3  
-                layer.register_full_backward_hook(gradient_hook)
+                if torch.isnan(features).any():
+                    raise ValueError("NaN values in input features")
+                if torch.isnan(labels).any():
+                    raise ValueError("NaN values in labels")
+                
+                print(f"Input: {features}")
                 output = model(features, features_len, verbose=False)
+                if torch.isnan(output).any():
+                    raise ValueError("NaN values in output")
+                print(f"Output: {output}")
                 input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()  
                 loss = criterion(input, labels, features_len, labels_len)
                 
+                optimizer.zero_grad()
                 loss.backward()
+                for name, param in model.named_parameters():
+                    if param.grad is not None:
+                        grad_norm = param.grad.norm(2)
+                        print(f"Gradient Norm for {name}: {grad_norm:.4f}")
                 optimizer.step()
                 
+                print(input.shape)
                 preds = torch.argmax(output, dim=-1)
 
                 epoch_loss += loss.item()
                 print(f"\n[Batch {batch_idx+1} / {len(train_data)}] Loss: {loss.item():.4f}")
                 f.write(f"Batch Loss: {loss.item():.4f}\n")
-                if batch_idx == 0:
+                
+                if (batch_idx == 0 and (epoch + 1) % 10 == 0) or (batch_idx == 0 and epoch == 0):
                     print(f"Output Shape: {output.shape}")
                     print("Features Length: ", features_len.shape)
                     print(f"Input Shape: {input.shape}")
                     print(f"Input Stride: {input.stride()}")
                     print(f"Predicted Shape: {preds.shape}")
                     print(f"Predicted Stride: {preds.stride()}")
-                print(f"Target: {labels[1].tolist()} \nPredicted: {preds[1].tolist()}")
-                f.write(f"Target: {labels[1].tolist()} \nPredicted: {preds[1].tolist()}")
+                print(f"Target: {labels[0].tolist()} \nPredicted: {ctc_decoder(preds[0].tolist())}")
+                f.write(f"Target: {labels[0].tolist()} \nPredicted: {preds[0].tolist()}")
                 f.write("\n"+"-"* 100 + "\n")
             scheduler.step(epoch_loss / len(train_data))
             model.eval()

@@ -10,15 +10,17 @@ import os
 import librosa
 import config
 from time import sleep
+from collections import defaultdict
 
 class SpeechDataset(Dataset):
     def __init__(self, sample_rate=16000):
         self.tsv_file = os.path.join(config.OUTPUT_PATH, f"{config.LANGUAGE}.tsv")
         self.sample_rate = sample_rate
-        self.audio_paths = []
+        self.spectrograms = []
         self.labels = []
-
-
+        
+        self.audio_paths = []
+        self.string_labels = []
         self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
             sample_rate=sample_rate,
             n_fft=400,            
@@ -35,107 +37,177 @@ class SpeechDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        audio_path = os.path.join(config.WAVS_PATH, self.audio_paths[idx] + ".wav")
-        # audio_path = os.path.join(config.WAVS_PATH, "common_voice_en_41435787.wav")
-        waveform = self._load_audio(audio_path).contiguous()
-        trimmed_spectogram = F.vad(waveform, self.sample_rate)
-        if trimmed_spectogram.numel() == 0:
-             trimmed_spectogram = waveform
-        orig_spectrogram = self.mel_spectrogram(waveform).contiguous()
-        orig_spectrogram = self.amplitude(orig_spectrogram)
-
-
-        spectrogram = orig_spectrogram.contiguous()
+        
+        # print(f"Spectrogram Shape: {self.spectrograms[idx].shape}")
         label = self.labels[idx]
-        features_len = spectrogram.size(-1)
+        features_len = self.spectrograms[idx].size(0)
         label_len = len(label)
         
-        if spectrogram.min() < -80 or spectrogram.max() > 80:
-            spectrogram = torch.clamp(spectrogram, min=-80, max=80)
-            sleep(0.5)
-            # self.plot_original_vs_normalized(spectrogram, clipped_spectrogram)
-            # raise ValueError(f"Spectrogram values out of range: {spectrogram.min()} to {spectrogram.max()}")
+        # print(f"Audio Name: {self.audio_paths[idx]} / Label: {label} / Label Length: {label_len} / Features Shape: {self.spectrograms[idx].shape}")
+        # print(f"{self.string_labels[idx]}")
+        # print(f"Min: {self.spectrograms[idx].min()} / Max: {self.spectrograms[idx].max()} / Mean: {self.spectrograms[idx].mean()} / Std: {self.spectrograms[idx].std()}")
         
-        spectrogram = spectrogram.squeeze(0).transpose(0, 1).contiguous()
-        return spectrogram, label, features_len, label_len
+              
+        return self.spectrograms[idx], torch.tensor(label), features_len, label_len, self.string_labels[idx], self.audio_paths[idx]
 
-    def plot_original_vs_normalized(self, original_spectrogram, normalized_spectrogram):
-        """Plots the original and normalized spectrograms side-by-side."""
-
-        fig, axes = plt.subplots(1, 2, figsize=(16, 6))  # 1 row, 2 columns
-
-        # Original Spectrogram
-        im1 = axes[0].imshow(original_spectrogram.squeeze(0), cmap='inferno', origin='lower', aspect='auto', interpolation='none')
-        axes[0].set_title("Original Mel Spectrogram")
-        axes[0].set_ylabel("Frequency (Mel Bands)")
-        axes[0].set_xlabel("Time (Frames)")
-        fig.colorbar(im1, ax=axes[0])  # Use default colorbar for original
-
-        # Normalized Spectrogram
-        im2 = axes[1].imshow(normalized_spectrogram.squeeze(0), cmap='inferno', origin='lower', aspect='auto', interpolation='none')
-        axes[1].set_title("Normalized Mel Spectrogram")
-        axes[1].set_ylabel("Frequency (Mel Bands)")
-        axes[1].set_xlabel("Time (Frames)")
-        fig.colorbar(im2, ax=axes[1])
-
-        plt.tight_layout()
-        plt.show()
-    
     def _load_data_from_tsv(self):
         if not os.path.exists(self.tsv_file):
             raise FileNotFoundError(f"TSV file not found at: {self.tsv_file}")
+        
         df = pd.read_csv(self.tsv_file, sep='\t')
-
+        duration_buckets = defaultdict(int)
         for index, row in df.iterrows():
             tokenized_transcript = list(map(int, row['tokenized_transcription'].split()))
-            self.audio_paths.append(row['file_name'])
-            self.labels.append(tokenized_transcript)
+            audio_path = os.path.join(config.WAVS_PATH, row['file_name'] + ".wav")
             
-    def _load_audio(self, audio_path):
+            if not os.path.exists(audio_path):
+                print(f"Audio file not found at: {audio_path}")
+                continue
+            
+            info = torchaudio.info(audio_path)
+            duration = info.num_frames / info.sample_rate
+            
+            short = duration > 6 and duration < 7
+            medium = duration > 7 and duration < 8
+            long = duration > 8 and duration < 10
+            target_frames = None
+            
+            if duration > 4 and duration < 6.25:
+                spectrogram, save = self._load_audio(audio_path, target_frames=target_frames)
+                
+                if save:
+                    print(f"Appended: Audio path: {audio_path} / Spectrogram Shape: {spectrogram.shape}")
+                    self.spectrograms.append(spectrogram)
+                    self.audio_paths.append(audio_path)
+                    self.labels.append(tokenized_transcript)
+                    self.string_labels.append(row['transcription'])
+                    
+        print("Loaded")
+        
+    def _load_audio(self, audio_path, target_frames=128000):
+        save = False
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found at: {audio_path}")
         
+        info = torchaudio.info(audio_path)
+
         waveform, sr = torchaudio.load(audio_path)
+
         if sr != self.sample_rate:
             print(f"Resampling {audio_path} to {self.sample_rate} Hz...")
             resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
             waveform = resampler(waveform)
+        waveform = waveform.contiguous()
+            
+        trimmed_waveform = F.vad(waveform, self.sample_rate)
+        if trimmed_waveform.numel() == 0:
+            trimmed_waveform = waveform
         
+        trimmed_duration = trimmed_waveform.size(1) / self.sample_rate
         
-        return waveform
-    
+        if trimmed_duration >= 4.5 and trimmed_duration <= 5:
+            save = True
+        else:
+            return None, False
 
+        current_length = trimmed_waveform.size(1)
+        
+        padding = int(5 * 16000) - current_length
+        trimmed_waveform = torch.nn.functional.pad(trimmed_waveform, (0, padding))
+        # print(f"Audio path: {audio_path} / Duration: {info.num_frames / info.sample_rate} / Waveform: {waveform.size(1) / info.sample_rate} / Trimmed: {trimmed_waveform.size(1) / info.sample_rate} / Sample rate: {self.sample_rate}")
+        # print(f"Audio: {audio_path} / Duration: {trimmed_waveform.size(1) / info.sample_rate}")
+        initial_spectrogram = self.mel_spectrogram(trimmed_waveform).contiguous()
+        initial_spectrogram = self.amplitude(initial_spectrogram)
+        spectrogram = initial_spectrogram.contiguous()
+        
+        mean = spectrogram.mean()
+        std = spectrogram.std()
+        spectrogram = (spectrogram - mean) / (std + 1e-5)
+        # print(f"Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
+        spectrogram = spectrogram.squeeze(0).transpose(0, 1).contiguous()
+        return spectrogram, save
+    
+def plot_waveforms (waveform, trimmed):
+    plt.figure(figsize=(12, 4))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(waveform.squeeze().numpy())
+    plt.title(f"Waveform 1 - {len(waveform.squeeze())/16000:.2f}s")
+    plt.xlabel("Samples")
+    plt.ylabel("Amplitude")
+
+    plt.subplot(1, 2, 2)
+    plt.plot(trimmed.squeeze().numpy())
+    plt.title(f"Waveform 2 - {len(trimmed.squeeze())/16000:.2f}s")
+    plt.xlabel("Samples")
+
+    plt.tight_layout()
+    plt.show()
+    
+def plot_comparison(padded, unpadded, sample_idx=0):
+    padded_sample = padded[sample_idx].squeeze(0).transpose(0,1).cpu().numpy()  # Padded (same sample as unpadded, we will manually pad it)
+    max_length = padded_sample.shape[0]
+    unpadded_sample = unpadded[sample_idx].squeeze(0).transpose(0,1).cpu().numpy()  # Padded (same sample as unpadded, we will manually pad it)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # Plot unpadded spectrogram
+    im1 = axes[0].imshow(unpadded_sample, aspect='auto', origin='lower', cmap='inferno')
+    axes[0].set_title(f"Unpadded Mel Spectrogram - Sample {sample_idx}")
+    axes[0].set_xlabel('Time')
+    axes[0].set_ylabel('Mel Frequency Bins')
+    plt.colorbar(im1, ax=axes[0], format="%+2.0f dB")  # Add colorbar to the unpadded plot
+
+    # Plot padded spectrogram
+    im2 = axes[1].imshow(padded_sample, aspect='auto', origin='lower', cmap='inferno')
+    axes[1].set_title(f"Padded Mel Spectrogram - Sample {sample_idx}")
+    axes[1].set_xlabel('Time')
+    axes[1].set_ylabel('Mel Frequency Bins')
+    plt.colorbar(im2, ax=axes[1], format="%+2.0f dB")  # Add colorbar to the padded plot
+    
+    plt.tight_layout()
+    plt.show()
 
 def collate_fn(batch):
-    features_batch, labels_batch, features_lens_batch, labels_lens_batch = zip(*batch)
+    features_batch, labels_batch, features_lens_batch, labels_lens_batch, string_labels, audio_paths = zip(*batch)
 
-    padded_features_batch = nn.utils.rnn.pad_sequence(features_batch, batch_first=True, padding_value=-80)
-    padded_labels_batch = nn.utils.rnn.pad_sequence([torch.tensor(label) for label in labels_batch], batch_first=True, padding_value=0)
+    for idx in range(len(features_batch)):
+        print(f"Audio Path: {audio_paths[idx]} / Label: {string_labels[idx]} / Features Shape: {features_batch[idx].shape}")
+        break
+
+    # padded_features_batch = nn.utils.rnn.pad_sequence(features_batch, batch_first=True , padding_value=0)
+    # padded_labels_batch = nn.utils.rnn.pad_sequence([torch.tensor(label) for label in labels_batch], batch_first=True, padding_value=0)
+    features_batch = torch.stack(features_batch, dim=0)  # [Batch, Time, Mel]
+    flattened_labels = torch.tensor([label for seq in labels_batch for label in seq])
     features_lens_batch = torch.tensor(features_lens_batch)
     labels_lens_batch = torch.tensor(labels_lens_batch)
-    
-    return padded_features_batch, padded_labels_batch, features_lens_batch, labels_lens_batch
-
+    # plot_comparison(padded_features_batch, features_batch ,sample_idx=0)
+    return features_batch, flattened_labels, features_lens_batch, labels_lens_batch
 
 def load_data():
     dataset = SpeechDataset()
     
     total_size = len(dataset)
-    quarter_size = 1000
+    quarter_size = total_size
     dataset_subset = torch.utils.data.Subset(dataset, range(quarter_size))
 
-    train_size = int(0.8 * quarter_size)
+    train_size = int(0.9 * quarter_size)
     val_size = quarter_size - train_size
 
     train_dataset, val_dataset = random_split(dataset_subset, [train_size, val_size])
-
+    
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
 
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Validation dataset size: {len(val_dataset)}")
 
-     
+    for batch_idx, (features, labels, features_len, labels_len) in enumerate(train_loader):
+        print(f"Features Shape: {features.shape}")
+        print(f"Labels: {labels[:25]} / {labels.shape}")
+        print(f"Features Length: {features_len} / {features_len.shape}")
+        print(f"Labels Length: {labels_len} / {labels_len.shape}")
+        break 
     return train_loader, val_loader
 
 if __name__ == "__main__":

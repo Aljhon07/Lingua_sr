@@ -1,170 +1,230 @@
 import torch
 import torch.nn as nn
+import src.SpeechDataset as sd
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
 import config
-from tools import dataset as ds
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
-import librosa.display
-import numpy as np
+import os
+from torchviz import make_dot
+from torch.utils.tensorboard import SummaryWriter
 
-
-class SimpleSpeechModel(nn.Module):
-    def __init__(self, input_dim, cnn_output_dim, rnn_output_dim, vocab_size, dropout_prob=0.2):
-        super(SimpleSpeechModel, self).__init__()
-
-        self.features = {}
-        self.cnn1 = nn.Sequential(
-            nn.Conv2d(1, cnn_output_dim, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(cnn_output_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout_prob),
-            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+torch.autograd.set_detect_anomaly(True)
+       
+class Conv2dBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+        super(Conv2dBlock, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.layer_norm = nn.Sequential(
+            nn.LayerNorm(out_channels),
+            nn.GELU(),
+            nn.Dropout(0.1)
         )
-
-        self.cnn2 = nn.Sequential(
-            nn.Conv2d(cnn_output_dim, cnn_output_dim * 2, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(cnn_output_dim * 2),
-            nn.ReLU(),
-        )
-
-        # Adjust RNN input size based on CNN output
-        self.gru = nn.GRU(
-            input_size=(cnn_output_dim * 2) * (input_dim // 2),  # Adjust for maxpool
-            hidden_size=rnn_output_dim,
-            num_layers=2,
-            batch_first=True,
-            bidirectional=True,
-            dropout = dropout_prob
-        )
-
-        self.rnn_norm = nn.LayerNorm(rnn_output_dim * 2) # layer norm after rnn.
-        self.rnn_gelu = nn.GELU() 
-        self.rnn_dropout = nn.Dropout(dropout_prob)
-        self.fc = nn.Linear(rnn_output_dim * 2, vocab_size)  # *2 for bidirectional
-
-    def forward(self, x, input_lengths=None):
-        print(f"Input shape: {x.shape}")
-        x = self.cnn1(x) #(batch_size, channels, features, time_steps)
-        print(f"After CNN - 1: {x.shape}") 
-        self.features["cnn1"] = x
-        x = self.cnn2(x)
-        print(f"After CNN - 2: {x.shape}")
-        self.features["cnn2"] = x
-        x = x.transpose(2, 3).contiguous()  # (batch_size,features , time_steps, channels)
-        print(f"After Transpose: {x.shape}")
-        x = x.view(x.size(0), x.size(2), -1)
-        print(f"After View: {x.shape}")
-        x = nn.utils.rnn.pack_padded_sequence(x, torch.floor(input_lengths / 2).int(), batch_first=True, enforce_sorted=False)
-        print(f"After Pack: {x.data.shape}")
+        
+    def forward(self, x, verbose=True):
+        if verbose:
+            print(f"Input Shape: {x.shape}")
+            print(f"Input Stride: {x.stride()}")
+            print(f"Input (contiguous): {x.is_contiguous()}")
+        x = self.conv(x)
+        if verbose:
+            print(f"Conv Shape: {x.shape}")
+            print(f"Conv Stride: {x.stride()}")
+            print(f"Conv (contiguous): {x.is_contiguous()}")
+        x = x.transpose(1, 3).contiguous()
+        if verbose:
+            print(f"Transpose Shape: {x.shape}")
+            print(f"Transpose Stride: {x.stride()}")
+            print(f"Transpose (contiguous): {x.is_contiguous()}")
+            
+        x = self.layer_norm(x)
+        if verbose:
+            print(f"Layer Norm Shape: {x.shape}")
+            print(f"Layer Norm Stride: {x.stride()}")
+            print(f"Layer Norm (contiguous): {x.is_contiguous()}")
+        
+        x = x.transpose(1, 3).contiguous()
+        if verbose:
+            print(f"Transpose Shape: {x.shape}")
+            print(f"Transpose Stride: {x.stride()}")
+            print(f"Transpose (contiguous): {x.is_contiguous()}")
+        return x
+    
+class SpeechRecognitionModel(nn.Module):
+    def __init__(self, n_class, n_feats, in_channels, out_channels, rnn_dim, rnn_num_layers=1, dropout_rate=0.2):
+        super(SpeechRecognitionModel, self).__init__()
+        self.conv1 = Conv2dBlock(in_channels, out_channels, kernel_size=(5, 5), stride=(1, 1), padding=5//2)
+        self.conv2 = Conv2dBlock(out_channels, out_channels, kernel_size=(3, 3), stride=(1, 1), padding=3//2)
+        self.conv_down = Conv2dBlock(out_channels, out_channels, kernel_size=(3, 3), stride=(2, 2), padding=3//2)
+        self.conv3 = Conv2dBlock(out_channels, out_channels * 2, kernel_size=(3, 3), stride=(1, 1), padding=3//2)
+        n_feats = n_feats // 2
+        dense_output_1 = (n_feats * (out_channels * 2)) // 2
+        self.dense = nn.Sequential(
+            nn.Linear(n_feats * (out_channels * 2), dense_output_1),
+            nn.LayerNorm(dense_output_1),
+            nn.GELU(),
+            nn.Dropout(0.2),
+            nn.Linear(dense_output_1, dense_output_1 // 2),
+            nn.GELU(),
+            nn.Dropout(0.2),
+            nn.Linear(dense_output_1 // 2, 512))
+        
+        self.gru = nn.GRU(input_size=rnn_dim * 2, hidden_size=rnn_dim, num_layers=rnn_num_layers, batch_first=True, bidirectional=True)
+        self.fc = nn.Linear(rnn_dim * 2, n_class)
+        
+    def forward(self, x, verbose=False):
+        x = self.conv1(x, verbose=verbose)
+        x = self.conv2(x, verbose=verbose)
+        x = self.conv_down(x, verbose=verbose)
+        x = self.conv3(x,   verbose=verbose)
+    
+        B, C, H, W = x.shape
+        if verbose:
+            print(f"B: {B} / C: {C} / H: {H} / W: {W}")
+        x = x.view(B, W, C * H).contiguous()
+        if verbose:
+            print(f"View Shape: {x.shape}")
+            print(f"View Stride: {x.stride()}")
+            print(f"View (contiguous): {x.is_contiguous()}")
+        x = self.dense(x)
+        if verbose:
+            print(f"Dense Shape: {x.shape}")
+            print(f"Dense Stride: {x.stride()}")
+            print(f"Dense (contiguous): {x.is_contiguous()}")
         x, _= self.gru(x)
-        x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
-        print(f"After GRU: {x.shape}")
-        x = self.rnn_norm(x)
-        print(f"After LayerNorm: {x.shape}")
-        x = self.rnn_gelu(x)
-        print(f"After GELU: {x.shape}")
-        x = self.rnn_dropout(x)
-        print(f"After Dropout: {x.shape}")
+        if verbose:
+            print(f"GRU Shape: {x.shape}")
+            print(f"GRU Stride: {x.stride()}")
         x = self.fc(x)
-        self.features["rnn"] = x
-        print(f"After FC: {x.shape}")
-
+        if verbose:
+            print(f"FC Shape: {x.shape}")
+            print(f"FC Stride: {x.stride()}")
+            print(f"FC (contiguous): {x.is_contiguous()}")
         return x
 
 def train():
-    input_dim = 64
-    cnn_output_dim = 32
-    cnn_output_dim2 = 64
-    rnn_output_dim = 512
-    vocab_size = 5000 
-    dropout_prob = 0.2
-    blank_id = 0
-
-    # Model and optimizer
-    model = SimpleSpeechModel(input_dim, cnn_output_dim, rnn_output_dim, vocab_size, dropout_prob)
-    loader = ds.load_data( f'{config.PATHS['common_voice']}/wavs', f"{config.PATHS["base_output"]}/{config.STAGE}.tsv")
+    log_file = os.path.join(config.LOG_DIR, f"{config.LANGUAGE}.log")
+    n_feats = 80
+    in_channels = 1
+    out_channels = 32
+    rnn_dim = 256
+    vocab_size = 29
+    total_epoch = 75
+    epoch_losses = []
+    val_losses = []
+    
+    if not os.path.exists(config.LOG_DIR):
+        os.makedirs(config.LOG_DIR)
+        
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    train_data, val_data = sd.load_data()
+    model = SpeechRecognitionModel(vocab_size, n_feats, in_channels, out_channels, rnn_dim).to(device)
+    
+    criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = optim.AdamW(model.parameters(), lr=0.0001)
-    criterion = nn.CTCLoss(blank=blank_id)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3)
 
-    # Training loop
-    num_epochs = 10
-    for epoch in range(num_epochs):
-        model.train()
-        epoch_loss = 0
-        
-        for batch_idx, (features, transcriptions, input_length, transcription_lengths) in enumerate(loader):
-            print("=" * 60)
-            print(f"🌀 Epoch {epoch + 1} - Batch {batch_idx+1}/{len(loader)}")
-            print("=" * 60)
-            optimizer.zero_grad() 
+    total_steps = len(train_data) * total_epoch
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01, total_steps=total_steps, epochs=total_epoch, steps_per_epoch=len(train_data), pct_start=0.1, anneal_strategy='linear')
 
-            output = model(features, input_length)
-            output = F.log_softmax(output, dim=2)
-            output = output.transpose(0, 1)
+    with open(log_file, 'a') as f:
+        for epoch in range(total_epoch):
+            model.train()
+            epoch_loss = 0.0
             
-            preds = torch.argmax(output, dim=2).transpose(0, 1)
-            loss = criterion(output, transcriptions, input_length // 2, transcription_lengths)
-            loss.backward()
-            optimizer.step()
-            epoch_loss += loss.item()
+            for batch_idx, (features, labels,features_len, labels_len) in enumerate(train_data):
+                optimizer.zero_grad()
 
-            print(f"Output shape: {output.shape}")
-            # print(f"Output: {output}")
-            # print(f"📊 Features shape: {features.shape}")
-            # print(f"⏱️ Input lengths: {input_length}")
-            # print(f"📝 Transcriptions shape: {transcriptions.shape}")
-            # print(f"🔢 Transcription lengths: {transcription_lengths}")
+                print(f"[Epoch {epoch + 1}] - [Batch {batch_idx+1} / {len(train_data)}]\n")
+                f.write(f"[Epoch {epoch + 1}] - [Batch {batch_idx+1} / {len(train_data)}]\n")
+                
+                features, labels = features.to(device), labels.to(device)
+                features = features.unsqueeze(1)
+                features = features.transpose(2, 3).contiguous()
+                
+                output = model(features, verbose=False)
+                make_dot(output.mean(), params=dict(model.named_parameters())).render("model_graph", format="png")
+                print(f"Features Stats: Shape: {features.shape} / Min: {features.min()} / Max: {features.max()} / Mean: {features.mean()} / Std: {features.std()}")
+                print(f"Output Stats: Shape: {output.shape} / Min: {output.min()} / Max: {output.max()} / Mean: {output.mean()} / Std: {output.std()}")
+                if output.isnan().any():
+                    raise ValueError("NaN detected in output")
 
-            print('_' * 60)
-            print("\n✨ ===== Sample Preview =====")
-            print(f"🎧 Feature shape: {features[0].shape}")  
-            print(f"⏳ Input length: {input_length[0]}")
-            print(f"📏 Transcript length: {transcription_lengths[0]}")
-            print(f"🔡 Transcript (token ids): {transcriptions[0]}")
-            print(f"Predictions: {preds[0]}")
-            print(f"Loss: {loss.item()}")
-          
-           
+                probs = torch.nn.functional.log_softmax(output, dim=2).transpose(0, 1).contiguous()  
 
-        print(f"Epoch {epoch+1}, Loss: {epoch_loss/len(loader)}")
-        scheduler.step(epoch_loss)
+                print(f"Probs Stats: Shape: {probs.shape} / Min: {probs.min()} / Max: {probs.max()} / Mean: {probs.mean()} / Std: {probs.std()}")
+                # probs = probs - probs.max(dim=2, keepdim=True).values  # Normalize logits
+                if probs.isnan().any():
+                    raise ValueError("NaN detected in input")
+                
+                print(f"Output: {output}")
+                print(f"Softmax: {probs}")
+                loss = criterion(probs, labels, features_len//2, labels_len)
+                # print(f"Probs Min: {probs.min()} / Max: {probs.max()} / Mean: {probs.mean()} / Std: {probs.std()}")
+                # print(f"Input Shape: {probs.shape}")
+                # print(f"Input Stride: {probs.stride()}")
+                if loss.item() < 0:
+                    raise ValueError("Negative loss detected")
+                
+                f.write(f"Batch Loss: {loss.item():.4f}\n")
+                
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+                
+                
+                print(f"Scheduler LR: {scheduler.get_last_lr()}")
+                for name, param in model.named_parameters():
+                    if param.grad is not None:
+                        print(f"Gradient for {name}: {param.grad.mean()}")
 
+                optimizer.step()
+                
+                preds = torch.argmax(probs, dim=2).transpose(0, 1).contiguous()
 
-def predict_ctc(model, features, input_length):
-    model.eval()
-    with torch.no_grad():
-        output = model(features, input_length)
-        output = F.log_softmax(output, dim=2)
-        output = output.transpose(0, 1)
-        preds = torch.argmax(output.transpose(0, 1), dim=2)
-        return preds
+                first_sample_len = labels_len[0].item()
+                first_sample_labels = labels[:first_sample_len]
+                epoch_loss += loss.item()
+                print(f"\n[Batch {batch_idx+1} / {len(train_data)}] Loss: {loss.item():.4f}")
+                f.write(f"Batch Loss: {loss.item():.4f}\n")
+                f.write(f"Target: {first_sample_labels.tolist()} \nPredicted: {preds[0].tolist()}")
+                f.write("\n"+"-"* 100 + "\n")
+                print(f"Target: {first_sample_labels.tolist()} \nPredicted: {ctc_decoder(preds[0].tolist())}")
+            model.eval()
+            val_loss = 0.0
+
+            
+            with torch.no_grad():
+                for features, labels, features_len, labels_len in val_data:
+                    features, labels = features.to(device), labels.to(device)
+                    features = features.unsqueeze(1)
+                    features = features.transpose(2, 3).contiguous()
+
+                    output = model(features, features_len)
+                    
+                    input = torch.nn.functional.log_softmax(output, dim=-1).transpose(0, 1).contiguous()
+                    loss = criterion(input, labels, features_len, labels_len)
+
+                    val_loss += loss.item()
+
+            epoch_loss /= len(train_data)
+            scheduler.step()
+            val_loss /= len(val_data)
+            print(f"\n[Epoch {epoch+1}] Loss: {epoch_loss:.4f} / Val Loss: {val_loss:.4f}")
+            f.write(f"[Epoch {epoch+1}] Loss: {epoch_loss:.4f} / Val Loss: {val_loss:.4f}\n")
+            val_losses.append(f"{val_loss:.3f}")
+            epoch_losses.append(f"{epoch_loss:.3f}")
+            print("Epoch Losses: ", epoch_losses)
+            print("Validation Losses: ", val_losses)
         
-def validate_feature_stats(feature_list, titles = ["Input", "CNN2"]):
-    """
-    Analyzes and visualizes a list of feature tensors in subplots.
-    """
-    num_features = len(feature_list)
-    fig, axes = plt.subplots(1, num_features, figsize=(10 * num_features, 4)) #adjust figsize.
-    if num_features == 1:
-        axes = [axes] #make iterable.
 
-    for i, features in enumerate(feature_list):
-        try:
-            feature_np = features.squeeze(0).cpu().numpy()
-        except:
-            feature_np = features[0].detach().numpy()
 
-        print(f"\n📊 {titles[i]} Statistics:")
-        print(f"    Mean: {np.mean(feature_np)}")
-        print(f"    Variance: {np.var(feature_np)}")
-        print(f"    Min: {np.min(feature_np)}")
-        print(f"    Max: {np.max(feature_np)}")
+def ctc_decoder(preds):
+    decoded = []
+    prev_char = None
+    for char_idx in preds:
+        if char_idx != 0 and char_idx != prev_char:
+            decoded.append(char_idx)
+        prev_char = char_idx
 
-        librosa.display.specshow(feature_np, sr=16000, hop_length=160, x_axis='time', y_axis='mel', ax=axes[i])
-        axes[i].set_title(titles[i])
-        fig.colorbar(axes[i].collections[0], ax=axes[i], format='%+2.0f dB')
+    return decoded           
 
-    plt.tight_layout()
-    plt.show()
+
+if __name__ == "__main__":
+    train()

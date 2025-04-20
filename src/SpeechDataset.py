@@ -30,7 +30,10 @@ class SpeechDataset(Dataset):
             normalized=True,
         )
         
-        self.amplitude = torchaudio.transforms.AmplitudeToDB(stype='power', top_db=80)
+        self.freq_mask = torchaudio.transforms.FrequencyMasking(freq_mask_param=15)
+        self.time_mask = torchaudio.transforms.TimeMasking(time_mask_param=35)
+        
+        self.amplitude = torchaudio.transforms.AmplitudeToDB(stype='power', top_db=100)
         self._load_data_from_tsv()
         
     def __len__(self):
@@ -73,7 +76,7 @@ class SpeechDataset(Dataset):
             target_frames = None
             
             if duration > 4 and duration < 6.25:
-                spectrogram, save = self._load_audio(audio_path, target_frames=target_frames)
+                spectrogram, save = self._load_audio(audio_path)
                 
                 if save:
                     print(f"Appended: Audio path: {audio_path} / Spectrogram Shape: {spectrogram.shape}")
@@ -84,7 +87,7 @@ class SpeechDataset(Dataset):
                     
         print("Loaded")
         
-    def _load_audio(self, audio_path, target_frames=128000):
+    def _load_audio(self, audio_path, apply_augmentation=False):
         save = False
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found at: {audio_path}")
@@ -98,35 +101,86 @@ class SpeechDataset(Dataset):
             resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
             waveform = resampler(waveform)
         waveform = waveform.contiguous()
+        print(f"Waveform Stats: Min: {waveform.min()} / Max: {waveform.max()} / Mean: {waveform.mean()} / Std: {waveform.std()}")
             
         trimmed_waveform = F.vad(waveform, self.sample_rate)
-        if trimmed_waveform.numel() == 0:
-            trimmed_waveform = waveform
-        
         trimmed_duration = trimmed_waveform.size(1) / self.sample_rate
-        
+
         if trimmed_duration >= 4.5 and trimmed_duration <= 5:
             save = True
         else:
             return None, False
 
         current_length = trimmed_waveform.size(1)
-        
-        padding = int(5 * 16000) - current_length
+        padding = (5 * 16000) - current_length
         trimmed_waveform = torch.nn.functional.pad(trimmed_waveform, (0, padding))
+
         # print(f"Audio path: {audio_path} / Duration: {info.num_frames / info.sample_rate} / Waveform: {waveform.size(1) / info.sample_rate} / Trimmed: {trimmed_waveform.size(1) / info.sample_rate} / Sample rate: {self.sample_rate}")
         # print(f"Audio: {audio_path} / Duration: {trimmed_waveform.size(1) / info.sample_rate}")
         initial_spectrogram = self.mel_spectrogram(trimmed_waveform).contiguous()
-        initial_spectrogram = self.amplitude(initial_spectrogram)
-        spectrogram = initial_spectrogram.contiguous()
+        # print(f"Initial Spectrogram Stats: Min: {initial_spectrogram.min()} / Max: {initial_spectrogram.max()} / Mean: {initial_spectrogram.mean()} / Std: {initial_spectrogram.std()}")
+        if apply_augmentation:
+            initial_spectrogram = self.freq_mask(initial_spectrogram).contiguous()
+            initial_spectrogram = self.time_mask(initial_spectrogram).contiguous()
         
-        mean = spectrogram.mean()
-        std = spectrogram.std()
-        spectrogram = (spectrogram - mean) / (std + 1e-5)
+        initial_spectrogram = self.amplitude(initial_spectrogram)
+        
+        spectrogram = initial_spectrogram.contiguous()
+        # print(f"Spectrogram Stats: Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
+        spectrogram_min = spectrogram.min()
+        spectrogram_max = spectrogram.max()
+
+        # Normalize the spectrogram
+        spectrogram = (spectrogram - spectrogram_min) / (spectrogram_max - spectrogram_min)
+        # print(f"Normalize Stats: Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
         # print(f"Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
+        
+        # plot_spectrogram(initial_spectrogram, spectrogram, sample_rate=self.sample_rate)
         spectrogram = spectrogram.squeeze(0).transpose(0, 1).contiguous()
         return spectrogram, save
     
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_spectrogram(orig, normalized, sample_rate=16000):
+    # Plot the raw (unnormalized) spectrogram
+    fig, axs = plt.subplots(2, 2, figsize=(15, 10))
+    
+    # Convert tensors to numpy arrays
+    orig = orig.squeeze(0).cpu().numpy()
+    normalized = normalized.squeeze(0).cpu().numpy()
+    
+    # Plot the raw (unnormalized) spectrogram
+    im0 = axs[0, 0].imshow(orig, aspect='auto', origin='lower', cmap='viridis')
+    axs[0, 0].set_title('Raw Mel Spectrogram')
+    axs[0, 0].set_xlabel('Time Frames')
+    axs[0, 0].set_ylabel('Mel Bands')
+    fig.colorbar(im0, ax=axs[0, 0], format="%+2.0f dB")
+
+    # Plot the normalized spectrogram
+    im1 = axs[0, 1].imshow(normalized, aspect='auto', origin='lower', cmap='viridis')
+    axs[0, 1].set_title('Normalized Mel Spectrogram')
+    axs[0, 1].set_xlabel('Time Frames')
+    axs[0, 1].set_ylabel('Mel Bands')
+    fig.colorbar(im1, ax=axs[0, 1], format="%+2.0f dB")
+
+    # Plot the distribution (histogram) of the raw spectrogram values
+    axs[1, 0].hist(orig.flatten(), bins=80, color='blue', alpha=0.7)
+    axs[1, 0].set_title('Distribution of Raw Mel Spectrogram')
+    axs[1, 0].set_xlabel('Amplitude')
+    axs[1, 0].set_ylabel('Frequency')
+
+    # Plot the distribution (histogram) of the normalized spectrogram values
+    axs[1, 1].hist(normalized.flatten(), bins=80, color='green', alpha=0.7)
+    axs[1, 1].set_title('Distribution of Normalized Mel Spectrogram')
+    axs[1, 1].set_xlabel('Amplitude')
+    axs[1, 1].set_ylabel('Frequency')
+
+    # Adjust layout to avoid overlap
+    plt.tight_layout()
+    plt.show()
+
+        
 def plot_waveforms (waveform, trimmed):
     plt.figure(figsize=(12, 4))
 
@@ -196,7 +250,7 @@ def load_data():
 
     train_dataset, val_dataset = random_split(dataset_subset, [train_size, val_size])
     
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
 
     print(f"Train dataset size: {len(train_dataset)}")

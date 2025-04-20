@@ -124,7 +124,7 @@ def train():
 
     total_steps = len(train_data) * total_epoch
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01, total_steps=total_steps, epochs=total_epoch, steps_per_epoch=len(train_data), pct_start=0.1, anneal_strategy='linear')
-
+    
     with open(log_file, 'a') as f:
         for epoch in range(total_epoch):
             model.train()
@@ -141,16 +141,16 @@ def train():
                 features = features.transpose(2, 3).contiguous()
                 
                 output = model(features, verbose=False)
-                make_dot(output.mean(), params=dict(model.named_parameters())).render("model_graph", format="png")
+
                 print(f"Features Stats: Shape: {features.shape} / Min: {features.min()} / Max: {features.max()} / Mean: {features.mean()} / Std: {features.std()}")
                 print(f"Output Stats: Shape: {output.shape} / Min: {output.min()} / Max: {output.max()} / Mean: {output.mean()} / Std: {output.std()}")
+
                 if output.isnan().any():
                     raise ValueError("NaN detected in output")
 
                 probs = torch.nn.functional.log_softmax(output, dim=2).transpose(0, 1).contiguous()  
-
                 print(f"Probs Stats: Shape: {probs.shape} / Min: {probs.min()} / Max: {probs.max()} / Mean: {probs.mean()} / Std: {probs.std()}")
-                # probs = probs - probs.max(dim=2, keepdim=True).values  # Normalize logits
+
                 if probs.isnan().any():
                     raise ValueError("NaN detected in input")
                 

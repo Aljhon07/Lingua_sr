@@ -1,4 +1,7 @@
 *.mp3
 *.wav
 *.npy
-__pycache__
+*.tsv
+__pycache__/
+sentences.txt
+data/

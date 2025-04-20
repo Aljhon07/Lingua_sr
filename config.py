@@ -1,7 +1,5 @@
-LANG = 'ja'
-STAGE = 'dev'
-PATHS = {
-    'base_output': f'data/{LANG}',
-    'output': f'data/{LANG}/{STAGE}',
-    'common_voice': f'../commonvoice/{LANG}'
-    }
+LANGUAGE = "en"
+COMMON_VOICE_PATH = f"./commonvoice/{LANGUAGE}"
+OUTPUT_PATH = f"./output/{LANGUAGE}"
+WAVS_PATH = COMMON_VOICE_PATH + "/wavs"
+LOG_DIR = "./logs"

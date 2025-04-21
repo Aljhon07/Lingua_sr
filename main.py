@@ -26,7 +26,14 @@ if __name__ == '__main__':
     # else:
     #     print(f"Directory {wavs_path} already exists. Skipping.")
 
-    model.train()
+    if os.path.exists(f"{output_path}/{language}.tsv"):
+        print(f"TSV file {output_path}/{language}.tsv exists. Proceeding with training.")
+        audio.classify_batch(f"{output_path}/{language}.tsv", wavs_path)
+    else:  
+        raise(f"TSV file {output_path}/{language}.tsv does not exist. Please run the TSV extraction first.")
+
+
+    # model.train()
     
   
 

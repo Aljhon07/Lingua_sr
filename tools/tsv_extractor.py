@@ -6,7 +6,6 @@ import config
 import re
 
 def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
-    
     remove_chars = r"[?!’–—‘\-\.,:;()“”\"]"
     output_path = os.path.join(output_path, config.LANGUAGE)
     file_names = []
@@ -34,10 +33,13 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
                     transcriptions.append(transcription)
     # Training the SentencePiece model
     sentences_filename = output_path + "_sentences.txt"
-    os.makedirs(os.path.dirname(sentences_filename), exist_ok=True)
-    with open(sentences_filename, 'w', encoding='utf-8') as sentences_file:
-        for transcript in transcriptions:
-            sentences_file.write(transcript + '\n')
+    if os.path.exists(sentences_filename):
+        print(f"Sentences file {sentences_filename} already exists. Skipping.")
+    else:    
+        os.makedirs(os.path.dirname(sentences_filename), exist_ok=True)
+        with open(sentences_filename, 'w', encoding='utf-8') as sentences_file:
+            for transcript in transcriptions:
+                sentences_file.write(transcript + '\n')
     lc.train()
     print(f"Transcriptions written to {sentences_filename}")
 

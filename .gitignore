@@ -2,6 +2,7 @@
 *.wav
 *.npy
 *.tsv
+*.pt
 __pycache__/
 sentences.txt
 data/

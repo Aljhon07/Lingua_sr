@@ -4,8 +4,13 @@ import config
 
 def train(model_type='char', vocab_size=5000,model_prefix = config.LANGUAGE,):
     input_file = os.path.join(config.OUTPUT_PATH, config.LANGUAGE+"_sentences.txt")
-    print(input_file)
+    print(f"Training SentencePiece model with input file: {input_file}")
     model_path = os.path.join(config.OUTPUT_PATH, model_prefix)
+    
+    if os.path.exists(model_path + ".model"):
+        print(f"Model {model_path}.model already exists. Skipping training.")
+        return
+    
     spm.SentencePieceTrainer.train(
         input=input_file,
         model_prefix=model_path,
@@ -15,7 +20,6 @@ def train(model_type='char', vocab_size=5000,model_prefix = config.LANGUAGE,):
     print(f"SentencePiece model trained successfully: {model_prefix}.model")
 
 def encode(input_text):
-    
     try:
         sp = spm.SentencePieceProcessor(model_file=model_file)
         encoded = sp.encode_as_ids(input_text) # or out_type=int for IDs

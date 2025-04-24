@@ -50,6 +50,10 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
 
     df_output = pd.DataFrame({
         'file_name': file_names,
+        'duration': [None] * len(file_names),
+        'padded_duration': [None] * len(file_names),
+        'num_frames': [None] * len(file_names),
+        'sample_rate': [None] * len(file_names),
         'transcription': transcriptions,
         'tokenized_transcription': tokenized_transcriptions,
         'tokenized_transcription_str': tokenized_transcriptions_str

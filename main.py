@@ -1,7 +1,7 @@
 import os
 from tools import tsv_extractor as te, audio, language_corpus as lc
 from src import SpeechDataset as sd
-from src import SpeechRecognitionModel as model
+from src import SimpleModel as model
 import pandas as pd
 import config
 
@@ -15,7 +15,8 @@ if __name__ == '__main__':
     # if os.path.exists(common_voice_path):
     #     te.process_and_encode_common_voice(common_voice_path, tsv_files, output_path)
 
-    # if not os.path.exists(wavs_path):
+    # recheck = True
+    # if os.path.exists(wavs_path) and recheck:
     #     print("Converting audio files to WAV format...")
     #     os.makedirs(wavs_path, exist_ok=True)
     #     print(f"Directory {wavs_path} created.")
@@ -27,7 +28,7 @@ if __name__ == '__main__':
     #     print(f"Directory {wavs_path} already exists. Skipping.")
 
     if os.path.exists(f"{output_path}/{language}.tsv"):
-        print(f"TSV file {output_path}/{language}.tsv exists. Proceeding with training.")
+        print(f"Classifying file {output_path}/{language}.tsv.")
         audio.classify_batch(f"{output_path}/{language}.tsv", wavs_path)
     else:  
         raise(f"TSV file {output_path}/{language}.tsv does not exist. Please run the TSV extraction first.")

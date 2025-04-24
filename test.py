@@ -1,65 +1,286 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
+import src.SpeechDataset as sd
+from torch.utils.data import Dataset, DataLoader
 
-# ======= Config =======
-BATCH_SIZE = 2
-SEQ_LEN = 200  # Increased sequence length
-INPUT_DIM = 80  # Increased input dimension
-TARGET_LEN = 10 # Increased target length
-VOCAB_SIZE = 500  # Increased vocabulary size
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding)
+        self.batch_norm1 = nn.BatchNorm2d(out_channels)
+        self.batch_norm2 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
 
-# ======= Hardcoded Inputs =======
-# Generate random inputs with the new shape
-inputs = torch.randn(BATCH_SIZE, SEQ_LEN, INPUT_DIM, dtype=torch.float32)
-
-# Input lengths can vary
-input_lengths = torch.tensor([SEQ_LEN, SEQ_LEN - 50], dtype=torch.long) # example length variation
-
-# Generate random targets within the new vocabulary size
-targets = torch.randint(1, VOCAB_SIZE, (BATCH_SIZE, TARGET_LEN), dtype=torch.long)
-target_lengths = torch.tensor([10, 5], dtype=torch.long) # example of target length variation
+    def forward(self, x):
+        identity = x
+        out = self.conv1(x)
+        out = self.batch_norm1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out += identity 
+        return self.relu(out)
 
 # ======= Model =======
 class SimpleCTCModel(nn.Module):
-    def __init__(self, input_dim, vocab_size):
+    def __init__(self, vocab_size):
         super().__init__()
-        self.lstm = nn.LSTM(input_dim, 4, batch_first=True, bidirectional=True)
-        self.fc = nn.Linear(8, vocab_size + 1)  # +1 for optional blank
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block1 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block2 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
 
+        
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)        
+        
+        self.cnn_linear = nn.Linear(32 * 40, vocab_size)  # Adjusted to match the new input size
+        # self.lstm = nn.LSTM(256, 256, num_layers=3, batch_first=True, bidirectional=True)
+        
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(512, vocab_size)  # Adjusted to match the new vocabulary size
+        # )
+        self.dropout = nn.Dropout(0.3)
+        self.dropout2 = nn.Dropout(0.3)
     def forward(self, x):
-        x, _ = self.lstm(x)
-        x = x.contiguous()  # Ensure contiguous memory layout
-        x = self.fc(x)
-        return x.transpose(0, 1)  # (T, B, C)
+        print(f"Input Shape: {x.shape}")
+        x = F.gelu(self.conv1(x))
+        x = self.res_block1(x)
+        x = self.res_block2(x)
+        x = self.res_block3(x)
+        print(f"After conv layers: {x.shape}")
+        x = self.dropout(x)
+        x = self.pool(x)
+        print(f"After pooling: {x.shape}")
+        x = x.view(x.size(0), x.size(3), -1).contiguous()  
+        # print(f"After view: {x.shape}")
+        x = self.cnn_linear(x)
+        # print(f"After linear: {x.shape}")
+        # print(f"Before LSTM: {x.shape}")
+        # x, _ = self.lstm(x)
+        # print(f"After LSTM: {x.shape}")
+        # x = self.classifier(x)
+        return x.transpose(0, 1).contiguous()  # (T, B, C)
 
 # ======= Training Pipeline =======
-model = SimpleCTCModel(INPUT_DIM, VOCAB_SIZE)
-criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
-# optimizer = optim.Adam(model.parameters(), lr=0.1)
-optimizer = optim.AdamW(model.parameters(), lr=0.1)
+def train():
+    model = SimpleCTCModel(40)
+
+    criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
+    # optimizer = optim.Adam(model.parameters(), lr=0.1)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+    batch_counter = 0
+    loaders = sd.load_data()
+    num_batches_per_epoch = sum(len(loader) for loader in loaders['train']class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding)
+        self.batch_norm1 = nn.BatchNorm2d(out_channels)
+        self.batch_norm2 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        identity = x
+        out = self.conv1(x)
+        out = self.batch_norm1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out += identity 
+        return self.relu(out)
+
+# ======= Model =======
+class SimpleCTCModel(nn.Module):
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block1 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block2 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+
+        epoch_batch_counter = 0
+        epoch_loss = 0.0
+        model.train()
+
+        for idx, (loader) in enumerate(loaders['train']):
+            for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
+                batch_counter += 1
+                epoch_batch_counter += 1
+                
+                print(f"Batch {batch_counter}/{num_batches_per_epoch * 200}")
+                optimizer.zero_grad()
+                outputs = model(spec).contiguous()
+                print(f"Output: ", outputs.shape)
+                output = torch.nn.functional.log_softmax(outputs, dim=-1)
+                
+                loss = criterion(output, targets, spec_len // 2, target_len)
+                
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+                epoch_loss += loss.item()
+                for name, param in model.named_parameters():
+                    if param.grad is not None:
+                        print(f"Gradient for {name}: {param.grad.norm():.4f}")
+                optimizer.step()
+                
+
+                # Raw predictions (no CTC decoding)
+                pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
+                # Print predictions vs targets
+                print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
+                print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * 200}] Loss: {loss.item():.4f}")
+
+                if(loss.item() < 0.5):
+                    torch.save(model.state_dict(), "model.pth")
+                    print("Loss is too low, stopping training.")
+                    break
+                   
+                if batch_counter == 1 or (batch_counter % 50 == 0 and batch_counter < 350):
+                    save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
+                    print(f"Checkpoint saved at epoch {epoch}")
+                
+                if (epoch + 1) % 50 == 0 and batch_idx == 0:
+                    save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_epoch_{epoch}.pth")
+                    print(f"Checkpoint saved at epoch {epoch}")
+
+        scheduler.step()
+        step(epoch_loss / num_batches_per_epoch)
+        for idx, (loader) in enumerate(loaders['val']):
+            model.eval()
+            val_loss = 0.0
+
+            with torch.no_grad():
+                for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
+                    outputs = model(spec)
+                    input = torch.nn.functional.log_softmax(outputs, dim=-1)
+                    
+                    loss = criterion(input, targets, spec_len // 2, target_len)
+                    preds = torch.argmax(input, dim=2).transpose(0, 1).contiguous()
+                    print(f"Target: {targets[0].tolist()}\nPredicted: {ctc_decoder(preds[0].tolist())}")
+                    val_loss += loss.item()
+                            
+        epoch_loss /= num_batches_per_epoch
+        val_loss /= sum(len(loader) for loader in loaders['val'])
+        print(f"Epoch {epoch+1}/{200} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}")
+
+    torch.save(model.state_dict(), "final_model.pth")
+    
+def ctc_decoder(preds):
+    decoded = []
+    prev_char = None
+    for char_idx in preds:
+        if char_idx != 0 and char_idx != prev_char:
+            decoded.append(char_idx)
+        prev_char = char_idx
+    return decoded  
+
+def save_checkpoint(model, optimizer, epoch, loss, filename="checkpoint.pth"):
+    checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': epoch,
+        'loss': loss
+    }
+    torch.save(checkpoint, filename)
+    print(f"✅ Saved checkpoint at epoch {epoch}")
+
+def load_checkpoint(model, optimizer, filename="checkpoint.pth"):
+    checkpoint = torch.load(filename)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    start_epoch = checkpoint['epoch'] + 1
+    loss = checkpoint.get('loss', None)
+    print(f"📦 Loaded checkpoint from epoch {start_epoch}")
+    return start_epoch, loss
 
 
-for epoch in range(100):
-    optimizer.zero_grad()
-    outputs = model(inputs).contiguous()
-    input = torch.nn.functional.log_softmax(outputs, dim=-1)  # (T, B, C)
-    loss = criterion(input, targets, input_lengths, target_lengths)
-    loss.backward()
+BATCH_SIZE = 32
+SEQ_LEN = 501  # Example sequence length
+INPUT_DIM = 80  # Input feature dimension
+TARGET_LEN = 20  # Example target sequence length
+VOCAB_SIZE = 500  # Vocabulary size for targets
 
-    optimizer.step()
+class FixedCTCDataset(Dataset):
+    def __init__(self, total_samples):
+        self.inputs = [torch.randn(INPUT_DIM, SEQ_LEN).unsqueeze(0) for _ in range(total_samples)]
+        self.input_lengths = [torch.randint(SEQ_LEN - 50, SEQ_LEN + 1, (1,)).item() for _ in range(total_samples)]
+        self.targets = [torch.randint(1, VOCAB_SIZE, (TARGET_LEN,)) for _ in range(total_samples)]
+        self.target_lengths = [torch.randint(10, TARGET_LEN + 1, (1,)).item() for _ in range(total_samples)]
 
-    print(f"\n[Epoch {epoch+1}] Loss: {loss.item():.4f}")
+    def __len__(self):
+        return len(self.inputs)
 
-    # Raw predictions (no CTC decoding)
-    pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
+    def __getitem__(self, idx):
+        return self.inputs[idx], self.input_lengths[idx], self.targets[idx], self.target_lengths[idx]
+    
+# Collate function to batch variable-length inputs
+def collate_fn(batch):
+    inputs, input_lengths, targets, target_lengths = zip(*batch)
+    inputs = torch.stack(inputs)
+    input_lengths = torch.tensor(input_lengths, dtype=torch.long)
+    targets = torch.stack(targets)
+    target_lengths = torch.tensor(target_lengths, dtype=torch.long)
+    return inputs, input_lengths, targets, target_lengths
 
-    # Target reconstruction
-    target_split = []
-    offset = 0
-    for length in target_lengths:
-        target_split.append(targets[offset:offset + length].tolist())
-        offset += length
+# Create DataLoader
 
-    # Print predictions vs targets
-    print(f"Sample {1} - Target: {targets[1]}, Raw Prediction: {pred_raw[1].tolist()}")
+
+def test():
+
+    # # Generate random input data
+    # inputs = torch.randn(BATCH_SIZE, INPUT_DIM, SEQ_LEN , dtype=torch.float32)
+    # inputs = inputs.unsqueeze(1)  
+
+    # # Input lengths (can vary per sample)
+    # input_lengths = torch.randint(low=SEQ_LEN - 50, high=SEQ_LEN + 1, size=(BATCH_SIZE,), dtype=torch.long)
+
+    # # Random target data within vocabulary
+    # targets = torch.randint(1, VOCAB_SIZE, (BATCH_SIZE, TARGET_LEN), dtype=torch.long)
+
+    # # Target lengths (can also vary per sample)
+    # target_lengths = torch.randint(low=10, high=TARGET_LEN + 1, size=(BATCH_SIZE,), dtype=torch.long)
+
+    dataset = FixedCTCDataset(600)
+    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
+
+    model = SimpleCTCModel(VOCAB_SIZE)
+    criterion = nn.CTCLoss(blank=0, zero_infinity=True)  # blank is the last index.
+    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+    
+    for epoch in range(20):  # Loop through dataset 3 times (just an example)
+        print(f"\n--- Epoch {epoch + 1} ---")
+        for i, (inputs, input_lengths, targets, target_lengths) in enumerate(dataloader):
+            model.train()
+            optimizer.zero_grad()
+            
+            outputs = model(inputs)
+            log_probs = torch.nn.functional.log_softmax(outputs, dim=-1)
+            preds = torch.argmax(log_probs, dim=2).transpose(0, 1).contiguous()
+
+          
+                
+            loss = criterion(log_probs, targets, input_lengths, target_lengths)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+            for name, param in model.named_parameters():
+                if param.grad is not None:
+                    print(f"Gradient for {name}: {param.grad.norm():.4f}")
+            optimizer.step()
+
+            print(f"Target: {targets[1]}\nRaw Prediction: {preds[1].tolist()}")
+            print(f"Epoch {epoch + 1} | Batch {i + 1}/{len(dataloader)} | Loss: {loss.item():.4f}")
+            print(f"="*50)
+            
+            
+        
+    
+if __name__ == "__main__":
+    # test()
+    train()
+    
+    

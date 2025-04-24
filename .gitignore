@@ -6,3 +6,9 @@
 __pycache__/
 sentences.txt
 data/
+*.tar.gz
+*.tar
+*.conda
+*.model
+*.vocab
+*.txt

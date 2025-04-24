@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
 torch.autograd.set_detect_anomaly(True)
-verbose = True
+verbose = False
 
 class CNNLayerNorm(nn.Module):
    def __init__(self, n_feats):
@@ -21,7 +21,7 @@ class CNNLayerNorm(nn.Module):
        # x (batch, channel, feature, time)
        x = x.transpose(2, 3).contiguous() # (batch, channel, time, feature)
        if verbose:
-           print(f"Layer Norm Transpose Shape: {x.shape} / Stride: {x.stride()} / Contiguous: {x.is_contiguous()}")
+           print(f"Layer Norm Transposed Shape: {x.shape} / Stride: {x.stride()} / Contiguous: {x.is_contiguous()}")
        x = self.layer_norm(x)
        return x.transpose(2, 3).contiguous() # (batch, channel, feature, time) 
    
@@ -91,7 +91,7 @@ class SpeechRecognitionModel(nn.Module):
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=3//2),
             *[
            ResidualCNN(32, 32, kernel=3, stride=1, dropout=dropout, n_feats=n_feats)
-           for _ in range(3)
+           for _ in range(2)
        ])
         self.fully_connected = nn.Linear(n_feats * 32, rnn_dim)
         
@@ -146,7 +146,7 @@ def train():
     in_channels = 1
     out_channels = 32
     rnn_dim = 512
-    vocab_size = 30
+    vocab_size = 1000
     total_epochs = 75
     epoch_losses = []
     val_losses = []
@@ -159,22 +159,26 @@ def train():
     model = SpeechRecognitionModel(vocab_size, n_feats, in_channels, out_channels, rnn_dim).to(device)
     
     criterion = nn.CTCLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.0005, weight_decay=1e-5)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.005)
     num_batches_per_epoch = sum(len(loader) for loader in data_loaders['train'])
     total_steps = num_batches_per_epoch * total_epochs
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01, epochs=total_epochs, steps_per_epoch=num_batches_per_epoch, anneal_strategy='linear')
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.001, epochs=total_epochs, steps_per_epoch=num_batches_per_epoch, anneal_strategy='linear')
     
+    print(f"Very Short Dataset: {len(data_loaders['train'][0].dataset)}")
+    print(f"Short Dataset: {len(data_loaders['train'][1].dataset)}")
+    print(f"Validation Dataset: {len(data_loaders['val'][0].dataset) + len(data_loaders['val'][1].dataset)}")
+    
+    batch_counter = 0
     with open(log_file, 'a') as f:
         for epoch in range(total_epochs):
             model.train()
             epoch_loss = 0.0
-            
-            for loader in data_loaders['train']:
+            batch_counter = 0
+            for idx, (loader) in enumerate(data_loaders['train']):
                 for batch_idx, (features, labels, features_len, labels_len, string_labels, audio_path) in enumerate(loader):
                     optimizer.zero_grad()
-
+                    batch_counter += 1
                     if batch_idx == 0 and epoch == 0:
-                        print(f"Model Summary: {model}\n")
                         print(f"Model Parameters: {sum(p.numel() for p in model.parameters())}\n")
                         print(f"Features Shape: {features.shape}\n")
                         print(f"Labels Shape: {labels.shape}\n")
@@ -190,8 +194,8 @@ def train():
                         
                         print(f"Audio Path: {audio_path[2]}\nLabels: {labels[2]}\nString Label: {string_labels[2]}\nLabels Length: {labels_len[2]}\nActual Length: {len(string_labels[2])}\n")
                         
-                    print(f"[Epoch {epoch + 1}] - [Batch {batch_idx+1} / {num_batches_per_epoch}]\n")
-                    f.write(f"[Epoch {epoch + 1}] - [Batch {batch_idx+1} / {num_batches_per_epoch}]\n")
+                    print(f"{"-"*75}\n[Epoch {epoch + 1}] - [Batch {batch_counter} / {num_batches_per_epoch}]\n{"-"*75}")
+                    f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter} / {num_batches_per_epoch}]\n")
                     
                     features, labels = features.to(device), labels.to(device)
                     
@@ -204,6 +208,9 @@ def train():
                         raise ValueError("NaN detected in output")
 
                     probs = F.log_softmax(output, dim=2)
+                    
+                    print(f"Output: {output}")
+                    print(f"Log Softmax: {probs}")
                     probs = probs.transpose(0, 1).contiguous()
                     print(f"Probs Stats: Shape: {probs.shape} / Min: {probs.min()} / Max: {probs.max()} / Mean: {probs.mean()} / Std: {probs.std()}")
 
@@ -218,8 +225,6 @@ def train():
                         raise ValueError("NaN detected in input")
 
                     loss = criterion(probs, labels, features_len // 2, labels_len)
-                    print(f"Input Shape: {probs.shape}")
-                    print(f"Input Stride: {probs.stride()}")
                     loss.backward()
                     if loss.item() < 0 :
                         raise ValueError("Negative loss detected")
@@ -237,7 +242,7 @@ def train():
 
                     preds = torch.argmax(probs, dim=2).transpose(0, 1).contiguous()
                     epoch_loss += loss.item()
-                    print(f"\n[Batch {batch_idx+1} / {num_batches_per_epoch}] Loss: {loss.item():.4f}")
+                    print(f"\n[Batch {batch_counter} / {num_batches_per_epoch}] Loss: {loss.item():.4f}")
                     f.write(f"Batch Loss: {loss.item():.4f}\n")
                     f.write(f"Target: {labels[0].tolist()} \nPredicted: {preds[0].tolist()}")
                     f.write("\n"+"-"* 100 + "\n")
@@ -248,16 +253,13 @@ def train():
                 val_loss = 0.0
 
                 with torch.no_grad():
-                    for features, labels, features_len, labels_len, _, _ in val_data:
+                    for features, labels, features_len, labels_len, _, _ in loader:
                         features, labels = features.to(device), labels.to(device)
-                        features = features.unsqueeze(1)
-                        features = features.transpose(2, 3).contiguous()
-
                         output = model(features)
-                        
                         input = output.log_softmax(2).transpose(0, 1).contiguous()
                         loss = criterion(input, labels, features_len // 2, labels_len)
 
+                        print(f"Target: {labels[0].tolist()} \nPredicted: {ctc_decoder(preds[0].tolist())}")
                         val_loss += loss.item()
 
             epoch_loss /= num_batches_per_epoch
@@ -270,8 +272,6 @@ def train():
             epoch_losses.append(f"{epoch_loss:.3f}")
             print("Epoch Losses: ", epoch_losses)
             print("Validation Losses: ", val_losses)
-        
-
 
 def ctc_decoder(preds):
     decoded = []
@@ -282,7 +282,6 @@ def ctc_decoder(preds):
         prev_char = char_idx
 
     return decoded           
-
 
 if __name__ == "__main__":
     train()

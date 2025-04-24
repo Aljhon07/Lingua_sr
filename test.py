@@ -8,18 +8,27 @@ from torch.utils.data import Dataset, DataLoader
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding, bias=False)
         self.batch_norm1 = nn.BatchNorm2d(out_channels)
         self.batch_norm2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
 
+        self.downsample = None
+        if in_channels != out_channels or stride != 1:
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
+            
     def forward(self, x):
         identity = x
         out = self.conv1(x)
         out = self.batch_norm1(out)
         out = self.relu(out)
         out = self.conv2(out)
+        if self.downsample is not None:
+            identity = self.downsample(identity)
         out += identity 
         return self.relu(out)
 
@@ -27,41 +36,47 @@ class ResidualBlock(nn.Module):
 class SimpleCTCModel(nn.Module):
     def __init__(self, vocab_size):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block1 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block2 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=5//2)
+        self.bn1 = nn.BatchNorm2d(32)
         
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)        
+        self.layer1 = self._make_layer(32, 64, blocks=2)        
+        self.layer2 = self._make_layer(64, 128, blocks=2)
+        self.layer3 = self._make_layer(128, 256, blocks=2)
         
-        self.cnn_linear = nn.Linear(32 * 40, vocab_size)  # Adjusted to match the new input size
+        self.pool = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, None)),
+            nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))
+        )     
+        
+        self.fc = nn.Linear(256, vocab_size)  # Adjusted to match the new input size
         # self.lstm = nn.LSTM(256, 256, num_layers=3, batch_first=True, bidirectional=True)
         
         # self.classifier = nn.Sequential(
         #     nn.Linear(512, vocab_size)  # Adjusted to match the new vocabulary size
         # )
-        self.dropout = nn.Dropout(0.3)
-        self.dropout2 = nn.Dropout(0.3)
+    def _make_layer(self, in_channels, out_channels, blocks):
+        layers = []
+        for _ in range(blocks):
+            layers.append(ResidualBlock(in_channels, out_channels))
+            in_channels = out_channels
+        return nn.Sequential(*layers)
+    
     def forward(self, x):
         print(f"Input Shape: {x.shape}")
         x = F.gelu(self.conv1(x))
-        x = self.res_block1(x)
-        x = self.res_block2(x)
-        x = self.res_block3(x)
-        print(f"After conv layers: {x.shape}")
-        x = self.dropout(x)
+        x = self.bn1(x)
+        x = self.layer1(x)
+        print(f"After layer1: {x.shape}")
+        x = self.layer2(x)
+        print(f"After layer2: {x.shape}")
+        x = self.layer3(x)
+        print(f"After layer3: {x.shape}")
         x = self.pool(x)
         print(f"After pooling: {x.shape}")
         x = x.view(x.size(0), x.size(3), -1).contiguous()  
-        # print(f"After view: {x.shape}")
-        x = self.cnn_linear(x)
-        # print(f"After linear: {x.shape}")
-        # print(f"Before LSTM: {x.shape}")
-        # x, _ = self.lstm(x)
-        # print(f"After LSTM: {x.shape}")
-        # x = self.classifier(x)
+        print(f"After view: {x.shape}")
+        x = self.fc(x)
+  
         return x.transpose(0, 1).contiguous()  # (T, B, C)
 
 # ======= Training Pipeline =======
@@ -74,44 +89,28 @@ def train():
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     batch_counter = 0
     loaders = sd.load_data()
-    num_batches_per_epoch = sum(len(loader) for loader in loaders['train']class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding)
-        self.batch_norm1 = nn.BatchNorm2d(out_channels)
-        self.batch_norm2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        identity = x
-        out = self.conv1(x)
-        out = self.batch_norm1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out += identity 
-        return self.relu(out)
-
-# ======= Model =======
-class SimpleCTCModel(nn.Module):
-    def __init__(self, vocab_size):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block1 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block2 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.res_block3 = ResidualBlock(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-
+    # num_batches_per_epoch = sum(len(loader) for loader in loaders['train'])
+        
+    for epoch in range(200):
         epoch_batch_counter = 0
         epoch_loss = 0.0
         model.train()
 
-        for idx, (loader) in enumerate(loaders['train']):
+        if epoch < 50:
+            current_train_loaders = loaders['train'][:2]  # Use only first 2 datasets
+        elif 50 <= epoch < 75:
+            current_train_loaders = loaders['train'][:5]  # Use first 5 datasets
+        else:
+            current_train_loaders = loaders['train']
+        
+        num_batches_per_epoch = sum(len(loader) for loader in current_train_loaders)
+        
+        for idx, (loader) in enumerate(current_train_loaders):
             for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
                 batch_counter += 1
                 epoch_batch_counter += 1
                 
-                print(f"Batch {batch_counter}/{num_batches_per_epoch * 200}")
+                print(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}")
                 optimizer.zero_grad()
                 outputs = model(spec).contiguous()
                 print(f"Output: ", outputs.shape)
@@ -138,7 +137,7 @@ class SimpleCTCModel(nn.Module):
                     torch.save(model.state_dict(), "model.pth")
                     print("Loss is too low, stopping training.")
                     break
-                   
+                    
                 if batch_counter == 1 or (batch_counter % 50 == 0 and batch_counter < 350):
                     save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
                     print(f"Checkpoint saved at epoch {epoch}")
@@ -149,6 +148,14 @@ class SimpleCTCModel(nn.Module):
 
         scheduler.step()
         step(epoch_loss / num_batches_per_epoch)
+        
+        if epoch < 50:
+            current_val_loaders = loaders['val'][:2]  # Use only first 2 datasets
+        elif 50 <= epoch < 75:
+            current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
+        else:
+            current_val_loaders = loaders['val']
+            
         for idx, (loader) in enumerate(loaders['val']):
             model.eval()
             val_loss = 0.0

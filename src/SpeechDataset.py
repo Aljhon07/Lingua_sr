@@ -36,6 +36,7 @@ class SpeechDataset(Dataset):
         
         transcription = metadata['transcription']
 
+        # audio_tools.plot_spectrogram(spectrogram, spectrogram)
         # print(f"Loading spectrogram from {spec_path}")
         # print(f"Spectrogram Stats: {spectrogram.shape} | Min: {spectrogram.min()} | Max: {spectrogram.max()} | Mean: {spectrogram.mean()} | Std: {spectrogram.std()} | Contiguous: {spectrogram.is_contiguous()}")
         # print(f"Audio: {audio_path} | Transcription: {transcription} | Tokenized: {tokenized_transcript}")
@@ -61,7 +62,9 @@ def load_data():
     sorted_keys = sorted(categorized_data.keys())
     datasets = []
 # Iterate over the sorted keys and print the number of samples for each key
-    for key in sorted_keys:
+    for idx, (key) in enumerate(sorted_keys):
+        if idx < 2 or len(categorized_data[key]) < 200:
+            continue
         print(f"Key: {key} | Number of samples: {len(categorized_data[key])}")
         datasets.append(SpeechDataset(categorized_data[key]))
         
@@ -96,12 +99,13 @@ def load_data():
 
     loaders = {'train': train_loaders, 'val': val_loaders}
 
-    for i, (feature, label, feature_len, label_len, string_labels, file_name) in enumerate(train_loaders[0]):
+    for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[2]):
         print(f"Features batch shape: {feature.shape}")
         print(f"Labels batch shape: {label.shape}")
         print(f"Feature lengths: {feature_len}")
         print(f"Label lengths: {label_len}")
-        print(f"Sample: {i+1} | String labels: {string_labels}")
+        for j in range(len(string_labels)):
+            print(f"Audio: {audio_paths[j]} | String label: {string_labels[j]}")            
         break
         
     return loaders

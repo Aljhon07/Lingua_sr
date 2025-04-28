@@ -4,6 +4,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import src.SpeechDataset as sd
 from torch.utils.data import Dataset, DataLoader
+import config
+
+verbose = True
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
@@ -62,19 +65,25 @@ class SimpleCTCModel(nn.Module):
         return nn.Sequential(*layers)
     
     def forward(self, x):
-        print(f"Input Shape: {x.shape}")
+        if verbose:
+            print(f"Input Shape: {x.shape}")
         x = F.gelu(self.conv1(x))
         x = self.bn1(x)
         x = self.layer1(x)
-        print(f"After layer1: {x.shape}")
+        if verbose:
+            print(f"After layer1: {x.shape}")
         x = self.layer2(x)
-        print(f"After layer2: {x.shape}")
+        if verbose:
+            print(f"After layer2: {x.shape}")
         x = self.layer3(x)
-        print(f"After layer3: {x.shape}")
+        if verbose:
+            print(f"After layer3: {x.shape}")
         x = self.pool(x)
-        print(f"After pooling: {x.shape}")
+        if verbose:
+            print(f"After pooling: {x.shape}")
         x = x.view(x.size(0), x.size(3), -1).contiguous()  
-        print(f"After view: {x.shape}")
+        if verbose:
+            print(f"After view: {x.shape}")
         x = self.fc(x)
   
         return x.transpose(0, 1).contiguous()  # (T, B, C)
@@ -82,99 +91,101 @@ class SimpleCTCModel(nn.Module):
 # ======= Training Pipeline =======
 def train():
     model = SimpleCTCModel(40)
-
+    log_file = os.path.join(config.LOG_DIR, f"{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
-    # optimizer = optim.Adam(model.parameters(), lr=0.1)
     optimizer = optim.AdamW(model.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     batch_counter = 0
     loaders = sd.load_data()
     # num_batches_per_epoch = sum(len(loader) for loader in loaders['train'])
-        
-    for epoch in range(200):
-        epoch_batch_counter = 0
-        epoch_loss = 0.0
-        model.train()
+    with open(log_file, 'a') as f:
+        for epoch in range(200):
+            epoch_batch_counter = 0
+            epoch_loss = 0.0
+            model.train()
 
-        if epoch < 50:
-            current_train_loaders = loaders['train'][:2]  # Use only first 2 datasets
-        elif 50 <= epoch < 75:
-            current_train_loaders = loaders['train'][:5]  # Use first 5 datasets
-        else:
-            current_train_loaders = loaders['train']
-        
-        num_batches_per_epoch = sum(len(loader) for loader in current_train_loaders)
-        
-        for idx, (loader) in enumerate(current_train_loaders):
-            for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
-                batch_counter += 1
-                epoch_batch_counter += 1
-                
-                print(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}")
-                optimizer.zero_grad()
-                outputs = model(spec).contiguous()
-                print(f"Output: ", outputs.shape)
-                output = torch.nn.functional.log_softmax(outputs, dim=-1)
-                
-                loss = criterion(output, targets, spec_len // 2, target_len)
-                
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
-                epoch_loss += loss.item()
-                for name, param in model.named_parameters():
-                    if param.grad is not None:
-                        print(f"Gradient for {name}: {param.grad.norm():.4f}")
-                optimizer.step()
-                
-
-                # Raw predictions (no CTC decoding)
-                pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
-                # Print predictions vs targets
-                print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
-                print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * 200}] Loss: {loss.item():.4f}")
-
-                if(loss.item() < 0.5):
-                    torch.save(model.state_dict(), "model.pth")
-                    print("Loss is too low, stopping training.")
-                    break
-                    
-                if batch_counter == 1 or (batch_counter % 50 == 0 and batch_counter < 350):
-                    save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
-                    print(f"Checkpoint saved at epoch {epoch}")
-                
-                if (epoch + 1) % 50 == 0 and batch_idx == 0:
-                    save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_epoch_{epoch}.pth")
-                    print(f"Checkpoint saved at epoch {epoch}")
-
-        scheduler.step()
-        step(epoch_loss / num_batches_per_epoch)
-        
-        if epoch < 50:
-            current_val_loaders = loaders['val'][:2]  # Use only first 2 datasets
-        elif 50 <= epoch < 75:
-            current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
-        else:
-            current_val_loaders = loaders['val']
+            if epoch < 25:
+                current_train_loaders = loaders['train'][:2]  # Use only first 2 datasets
+            elif 25 <= epoch < 50:
+                current_train_loaders = loaders['train'][:5]  # Use first 5 datasets
+            else:
+                current_train_loaders = loaders['train']
             
-        for idx, (loader) in enumerate(loaders['val']):
-            model.eval()
-            val_loss = 0.0
-
-            with torch.no_grad():
+            num_batches_per_epoch = sum(len(loader) for loader in current_train_loaders)
+            
+            for idx, (loader) in enumerate(current_train_loaders):
                 for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
-                    outputs = model(spec)
-                    input = torch.nn.functional.log_softmax(outputs, dim=-1)
+                    batch_counter += 1
+                    epoch_batch_counter += 1
                     
-                    loss = criterion(input, targets, spec_len // 2, target_len)
-                    preds = torch.argmax(input, dim=2).transpose(0, 1).contiguous()
-                    print(f"Target: {targets[0].tolist()}\nPredicted: {ctc_decoder(preds[0].tolist())}")
-                    val_loss += loss.item()
-                            
-        epoch_loss /= num_batches_per_epoch
-        val_loss /= sum(len(loader) for loader in loaders['val'])
-        print(f"Epoch {epoch+1}/{200} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}")
+                    print(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}")
+                    f.write(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}\n")
+                    optimizer.zero_grad()
+                    outputs = model(spec).contiguous()
+                    print(f"Output: ", outputs.shape)
+                    output = torch.nn.functional.log_softmax(outputs, dim=-1)
+                    
+                    loss = criterion(output, targets, spec_len // 2, target_len)
+                    
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+                    epoch_loss += loss.item()
+                    for name, param in model.named_parameters():
+                        if param.grad is not None:
+                            print(f"Gradient for {name}: {param.grad.norm():.4f}")
+                    optimizer.step()
+                    
 
-    torch.save(model.state_dict(), "final_model.pth")
+                    # Raw predictions (no CTC decoding)
+                    pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
+                    # Print predictions vs targets
+                    print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
+                    print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * 200}] Loss: {loss.item():.4f}")
+                    f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * 200}] Loss: {loss.item():.4f}\n")
+                    f.write(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}\n")
+                    if(loss.item() < 0.5):
+                        torch.save(model.state_dict(), "model.pth")
+                        print("Loss is too low, stopping training.")
+                        break
+                        
+                    if batch_counter == 1 or batch_counter == 20 or (batch_counter % 50 == 0 and batch_counter < 350):
+                        save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
+                        print(f"Checkpoint saved at epoch {epoch}")
+                    
+                    if (epoch + 1) % 50 == 0 and batch_idx == 0:
+                        save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_epoch_{epoch}.pth")
+                        print(f"Checkpoint saved at epoch {epoch}")
+
+            scheduler.step(epoch_loss / num_batches_per_epoch)
+
+            if epoch < 25:
+                current_val_loaders = loaders['val'][:2]  # Use only first 2 datasets
+            elif 25 <= epoch < 50:
+                current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
+            else:
+                current_val_loaders = loaders['val']
+                
+            val_loss = 0.0
+            for idx, (loader) in enumerate(current_val_loaders):
+                model.eval()
+
+                with torch.no_grad():
+                    for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
+                        outputs = model(spec)
+                        input = torch.nn.functional.log_softmax(outputs, dim=-1)
+                        
+                        loss = criterion(input, targets, spec_len // 2, target_len)
+                        preds = torch.argmax(input, dim=2).transpose(0, 1).contiguous()
+                        print(f"Loss: {loss.item()}")
+                        print(f"Target: {targets[0].tolist()}\nPredicted: {ctc_decoder(preds[0].tolist())}")
+                        val_loss += loss.item()
+                                
+            epoch_loss /= num_batches_per_epoch
+            val_loss /= sum(len(loader) for loader in current_val_loaders)
+            print(f"Epoch {epoch+1}/{200} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}")
+            f.write(f"Epoch {epoch+1}/{200} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}\n")
+
+        torch.save(model.state_dict(), "final_model.pth")
     
 def ctc_decoder(preds):
     decoded = []

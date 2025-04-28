@@ -4,9 +4,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 import src.SpeechDataset as sd
 from torch.utils.data import Dataset, DataLoader
+import os
 import config
 
 verbose = True
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
@@ -90,8 +93,9 @@ class SimpleCTCModel(nn.Module):
 
 # ======= Training Pipeline =======
 def train():
-    model = SimpleCTCModel(40)
-    log_file = os.path.join(config.LOG_DIR, f"{config.LANGUAGE}.log")
+    model = SimpleCTCModel(40).to(device)
+    total_epochs = 100
+    log_file = os.path.join(config.LOG_DIR, f"test_{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
     optimizer = optim.AdamW(model.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
@@ -99,7 +103,10 @@ def train():
     loaders = sd.load_data()
     # num_batches_per_epoch = sum(len(loader) for loader in loaders['train'])
     with open(log_file, 'a') as f:
-        for epoch in range(200):
+        f.write(f"Using device: {device}\n")
+        f.write(f"Model Summary: {model}\n")
+
+        for epoch in range(total_epochs):
             epoch_batch_counter = 0
             epoch_loss = 0.0
             model.train()
@@ -118,12 +125,22 @@ def train():
                     batch_counter += 1
                     epoch_batch_counter += 1
                     
+                    spec = spec.to(device)  
+                    targets = targets.to(device) 
+                    spec_len = spec_len.to(device) 
+                    target_len = target_len.to(device)
+                    
                     print(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}")
-                    f.write(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}\n")
+                    if (batch_idx + 1) & 10 == 0 
+                        f.write(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}\n")
+                        
                     optimizer.zero_grad()
                     outputs = model(spec).contiguous()
                     print(f"Output: ", outputs.shape)
                     output = torch.nn.functional.log_softmax(outputs, dim=-1)
+                    
+                    if torch.isnan(loss).any() or torch.isnan(outputs).any() or torch.isnan(outputs).any():
+                        raise ValueError("NaN detected!!")
                     
                     loss = criterion(output, targets, spec_len // 2, target_len)
                     
@@ -135,14 +152,14 @@ def train():
                             print(f"Gradient for {name}: {param.grad.norm():.4f}")
                     optimizer.step()
                     
-
                     # Raw predictions (no CTC decoding)
                     pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
                     # Print predictions vs targets
                     print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
-                    print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * 200}] Loss: {loss.item():.4f}")
-                    f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * 200}] Loss: {loss.item():.4f}\n")
-                    f.write(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}\n")
+                    print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}")
+                    if (batch_idx + 1) & 10 == 0 
+                        f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}\n")
+                        f.write(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}\n")
                     if(loss.item() < 0.5):
                         torch.save(model.state_dict(), "model.pth")
                         print("Loss is too low, stopping training.")
@@ -182,8 +199,8 @@ def train():
                                 
             epoch_loss /= num_batches_per_epoch
             val_loss /= sum(len(loader) for loader in current_val_loaders)
-            print(f"Epoch {epoch+1}/{200} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}")
-            f.write(f"Epoch {epoch+1}/{200} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}\n")
+            print(f"Epoch {epoch+1}/{total_epochs} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}")
+            f.write(f"Epoch {epoch+1}/{total_epochs} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}\n")
 
         torch.save(model.state_dict(), "final_model.pth")
     
@@ -245,7 +262,6 @@ def collate_fn(batch):
     return inputs, input_lengths, targets, target_lengths
 
 # Create DataLoader
-
 
 def test():
 

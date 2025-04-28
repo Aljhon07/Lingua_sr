@@ -45,8 +45,6 @@ Model Arhictecture and Training Configuration:
 
 ## Usage
 
-1. Create commonvoice folder within the same directory of the project folder.
-2. # Download dataset from commonvoice and
-   .model and .vocab
-   https://github.com/bheinzerling/bpemb?tab=readme-ov-file#downloads-for-each-language
-   > > > > > > > 87a552b (Reinitialized project)
+1. Run pip install -r requirements.txt
+2. Follow instruction in commonvoice folder
+3. Run python test.py

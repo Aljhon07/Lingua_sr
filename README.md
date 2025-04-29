@@ -46,5 +46,5 @@ Model Arhictecture and Training Configuration:
 ## Usage
 
 1. Run pip install -r requirements.txt
-2. Follow instruction in commonvoice folder
-3. Run python test.py
+2. Install FFMPEG
+3. Install datasets from https://commonvoice.mozilla.org/en/datasets version 12.0, 16.1, 20.0

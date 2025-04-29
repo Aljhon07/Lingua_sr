@@ -54,7 +54,7 @@ class SimpleCTCModel(nn.Module):
             nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))
         )     
         
-        self.fc = nn.Linear(256, vocab_size)  # Adjusted to match the new input size
+        self.fc = nn.Linear(128, vocab_size)  # Adjusted to match the new input size
         # self.lstm = nn.LSTM(256, 256, num_layers=3, batch_first=True, bidirectional=True)
         
         # self.classifier = nn.Sequential(
@@ -131,7 +131,7 @@ def train():
                     target_len = target_len.to(device)
                     
                     print(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}")
-                    if (batch_idx + 1) & 10 == 0 
+                    if (batch_idx + 1) & 10 == 0:
                         f.write(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}\n")
                         
                     optimizer.zero_grad()
@@ -139,10 +139,10 @@ def train():
                     print(f"Output: ", outputs.shape)
                     output = torch.nn.functional.log_softmax(outputs, dim=-1)
                     
-                    if torch.isnan(loss).any() or torch.isnan(outputs).any() or torch.isnan(outputs).any():
-                        raise ValueError("NaN detected!!")
                     
                     loss = criterion(output, targets, spec_len // 2, target_len)
+                    if torch.isnan(loss).any() or torch.isnan(outputs).any() or torch.isnan(outputs).any():
+                        raise ValueError("NaN detected!!")
                     
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
@@ -157,7 +157,7 @@ def train():
                     # Print predictions vs targets
                     print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
                     print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}")
-                    if (batch_idx + 1) & 10 == 0 
+                    if (batch_idx + 1) & 10 == 0:
                         f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}\n")
                         f.write(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}\n")
                     if(loss.item() < 0.5):

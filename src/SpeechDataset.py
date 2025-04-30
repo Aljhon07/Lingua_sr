@@ -24,7 +24,7 @@ class SpeechDataset(Dataset):
         return len(self.data)
     
     def __getitem__(self, idx):
-        spec_path, tokenized_transcript, metadata = self.data[idx]
+        spec_path, tokenized_transcript, metadata = self.data[10]
         audio_path = os.path.join(config.WAVS_PATH, metadata['file_name'] + ".wav")
         
         # test, _, _ = audio_tools.load_audio(audio_path, torchaudio.info(audio_path), 16000)
@@ -74,19 +74,7 @@ def load_data():
         print(f"Dataset Size: {len(dataset)} samples | Duration: {dataset.get_total_durations() / 60 / 60:.2f} hours")
         total_duration = dataset.get_total_durations()
     print(f"Total Duration: {total_duration / 60 / 60:.2f} hours")
-    
-    # short_dataset = SpeechDataset()
-    # medium_dataset = SpeechDataset()
-    # long_dataset = SpeechDataset()
-    # extended_dataset = SpeechDataset()
-    
-    
-    # print(f"Short Dataset: {len(short_dataset)} samples")
-    # print(f"Medium Dataset: {len(medium_dataset)} samples")
-    # print(f"Long Dataset: {len(long_dataset)} samples")
-    # print(f"Extended Dataset: {len(extended_dataset)} samples")
-    # print(f"{(very_short_dataset.total_durations + short_dataset.total_durations + medium_dataset.total_durations + long_dataset.total_durations) / 60:.2f} hours of audio loaded")
-    # datasets = [very_short_dataset]
+
     train_loaders, val_loaders = [], []
     
     for dataset in datasets:
@@ -97,9 +85,9 @@ def load_data():
         train_loaders.append(DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn))
         val_loaders.append(DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn))
 
-    loaders = {'train': train_loaders, 'val': val_loaders}
+    loaders = {'train':[ train_loaders[0]], 'val': [val_loaders[0]]}
 
-    for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[2]):
+    for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[0]):
         print(f"Features batch shape: {feature.shape}")
         print(f"Labels batch shape: {label.shape}")
         print(f"Feature lengths: {feature_len}")

@@ -2,7 +2,7 @@ import os
 import sentencepiece as spm
 import config
 
-def train(model_type='char', vocab_size=5000,model_prefix = config.LANGUAGE,):
+def train(model_type='bpe', vocab_size=750,model_prefix = config.LANGUAGE,):
     input_file = os.path.join(config.OUTPUT_PATH, config.LANGUAGE+"_sentences.txt")
     print(f"Training SentencePiece model with input file: {input_file}")
     model_path = os.path.join(config.OUTPUT_PATH, model_prefix)
@@ -16,6 +16,7 @@ def train(model_type='char', vocab_size=5000,model_prefix = config.LANGUAGE,):
         model_prefix=model_path,
         model_type=model_type,
         character_coverage=1.0,
+        vocab_size=vocab_size,
     )
     print(f"SentencePiece model trained successfully: {model_prefix}.model")
 

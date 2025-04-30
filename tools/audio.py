@@ -150,8 +150,8 @@ def load_audio(audio_path, info, sample_rate = 16000):
     # print(f"Amplitude Stats: Shape: {spectrogram.shape} / Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
     # print(f"Normalized Spectrogram Stats: Shape: {normalized_spec.shape} / Min: {normalized_spec.min()} / Max: {normalized_spec.max()} / Mean: {normalized_spec.mean()} / Std: {normalized_spec.std()}")
     
-    plot_waveforms(initial_waveform, waveform)
-    plot_spectrogram(initial_spectrogram, normalized_spec, sample_rate=16000)
+    # plot_waveforms(initial_waveform, waveform)
+    # plot_spectrogram(initial_spectrogram, normalized_spec, sample_rate=16000)
     return normalized_spec, padded_duration, save
 
 def double_vad(audio, sample_rate):

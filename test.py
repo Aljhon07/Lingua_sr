@@ -14,12 +14,12 @@ print(f"Using device: {device}")
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+        
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=kernel_size//2, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding, bias=False)
-        self.batch_norm1 = nn.BatchNorm2d(out_channels)
-        self.batch_norm2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-
+        self.bn2 = nn.BatchNorm2d(out_channels)
+            
         self.downsample = None
         if in_channels != out_channels or stride != 1:
             self.downsample = nn.Sequential(
@@ -27,39 +27,45 @@ class ResidualBlock(nn.Module):
                 nn.BatchNorm2d(out_channels)
             )
             
+        self.relu = nn.ReLU(inplace=True)
     def forward(self, x):
         identity = x
-        out = self.conv1(x)
-        out = self.batch_norm1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
+        
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        
         if self.downsample is not None:
             identity = self.downsample(identity)
-        out += identity 
-        return self.relu(out)
+        x += identity 
+        
+        return self.relu(x)
 
 # ======= Model =======
 class SimpleCTCModel(nn.Module):
     def __init__(self, vocab_size):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=5//2)
+        self.conv = nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=5//2)
         self.bn1 = nn.BatchNorm2d(32)
         
         self.layer1 = self._make_layer(32, 64, blocks=2)        
         self.layer2 = self._make_layer(64, 128, blocks=2)
-        self.layer3 = self._make_layer(128, 256, blocks=2)
         
         self.pool = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, None)),
+            nn.AdaptiveAvgPool2d((8, None)),
             nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))
         )     
         
-        self.fc = nn.Linear(128, vocab_size)  # Adjusted to match the new input size
-        # self.lstm = nn.LSTM(256, 256, num_layers=3, batch_first=True, bidirectional=True)
-        
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(512, vocab_size)  # Adjusted to match the new vocabulary size
-        # )
+        self.fc = nn.Sequential(
+            nn.Linear(128 * 8, 512),
+            nn.LayerNorm(512),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(512, vocab_size),
+        )
+ 
     def _make_layer(self, in_channels, out_channels, blocks):
         layers = []
         for _ in range(blocks):
@@ -70,7 +76,7 @@ class SimpleCTCModel(nn.Module):
     def forward(self, x):
         if verbose:
             print(f"Input Shape: {x.shape}")
-        x = F.gelu(self.conv1(x))
+        x = F.gelu(self.conv(x))
         x = self.bn1(x)
         x = self.layer1(x)
         if verbose:
@@ -78,9 +84,9 @@ class SimpleCTCModel(nn.Module):
         x = self.layer2(x)
         if verbose:
             print(f"After layer2: {x.shape}")
-        x = self.layer3(x)
-        if verbose:
-            print(f"After layer3: {x.shape}")
+        # x = self.layer3(x)
+        # if verbose:
+        #     print(f"After layer3: {x.shape}")
         x = self.pool(x)
         if verbose:
             print(f"After pooling: {x.shape}")
@@ -88,12 +94,12 @@ class SimpleCTCModel(nn.Module):
         if verbose:
             print(f"After view: {x.shape}")
         x = self.fc(x)
-  
+
         return x.transpose(0, 1).contiguous()  # (T, B, C)
 
 # ======= Training Pipeline =======
 def train():
-    model = SimpleCTCModel(40).to(device)
+    model = SimpleCTCModel(750).to(device)
     total_epochs = 100
     log_file = os.path.join(config.LOG_DIR, f"test_{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
@@ -101,6 +107,8 @@ def train():
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     batch_counter = 0
     loaders = sd.load_data()
+    epoch_losses = []
+    val_losses = []
     # num_batches_per_epoch = sum(len(loader) for loader in loaders['train'])
     with open(log_file, 'a') as f:
         f.write(f"Using device: {device}\n")
@@ -109,12 +117,11 @@ def train():
         for epoch in range(total_epochs):
             epoch_batch_counter = 0
             epoch_loss = 0.0
-            model.train()
 
             if epoch < 25:
-                current_train_loaders = loaders['train'][:2]  # Use only first 2 datasets
+                current_train_loaders = loaders['train'][:3] 
             elif 25 <= epoch < 50:
-                current_train_loaders = loaders['train'][:5]  # Use first 5 datasets
+                current_train_loaders = loaders['train'][:5] 
             else:
                 current_train_loaders = loaders['train']
             
@@ -122,6 +129,7 @@ def train():
             
             for idx, (loader) in enumerate(current_train_loaders):
                 for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
+                    model.train()
                     batch_counter += 1
                     epoch_batch_counter += 1
                     
@@ -130,16 +138,24 @@ def train():
                     spec_len = spec_len.to(device) 
                     target_len = target_len.to(device)
                     
-                    print(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}")
+                    print(f"[Epoch {epoch + 1}] | Dataset: {idx}/{len(current_train_loaders)} | Batch {batch_idx}/{len(loader)}")
                     if (batch_idx + 1) & 10 == 0:
-                        f.write(f"[Epoch {epoch + 1}] | Batch {batch_counter}/{num_batches_per_epoch}\n")
+                        f.write(f"[Epoch {epoch + 1}] | Dataset: {idx}/{len(current_train_loaders)} | Batch {batch_idx}/{len(loader)}\n")
                         
                     optimizer.zero_grad()
                     outputs = model(spec).contiguous()
                     print(f"Output: ", outputs.shape)
                     output = torch.nn.functional.log_softmax(outputs, dim=-1)
                     
-                    
+                    softmax_output = output[:, 0, :]
+                    outputs_sample = outputs[:, 0, :]
+
+                    print(f"Outputs std/mean: {outputs.std():.4f}/{outputs.mean():.4f}")
+                    print(f"Outputs First 10: {outputs_sample[0][:10].tolist()}")
+                    print(f"Outputs Last 10: {outputs_sample[0][-10:].tolist()}")
+                    print(f"First 10: {softmax_output[0][:10].tolist()}")
+                    print(f"Last 10: {softmax_output[0][-10:].tolist()}")
+
                     loss = criterion(output, targets, spec_len // 2, target_len)
                     if torch.isnan(loss).any() or torch.isnan(outputs).any() or torch.isnan(outputs).any():
                         raise ValueError("NaN detected!!")
@@ -152,9 +168,8 @@ def train():
                             print(f"Gradient for {name}: {param.grad.norm():.4f}")
                     optimizer.step()
                     
-                    # Raw predictions (no CTC decoding)
                     pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
-                    # Print predictions vs targets
+                    sample_pred = pred_raw[1]
                     print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
                     print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}")
                     if (batch_idx + 1) & 10 == 0:
@@ -169,14 +184,14 @@ def train():
                         save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
                         print(f"Checkpoint saved at epoch {epoch}")
                     
-                    if (epoch + 1) % 50 == 0 and batch_idx == 0:
+                    if (epoch + 1) % 50 == 0 and batch_idx == 0 and idx == 0:
                         save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_epoch_{epoch}.pth")
                         print(f"Checkpoint saved at epoch {epoch}")
 
             scheduler.step(epoch_loss / num_batches_per_epoch)
 
             if epoch < 25:
-                current_val_loaders = loaders['val'][:2]  # Use only first 2 datasets
+                current_val_loaders = loaders['val'][:3]  # Use only first 2 datasets
             elif 25 <= epoch < 50:
                 current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
             else:
@@ -199,7 +214,12 @@ def train():
                                 
             epoch_loss /= num_batches_per_epoch
             val_loss /= sum(len(loader) for loader in current_val_loaders)
+            epoch_losses.append(epoch_loss)
+            val_losses.append(val_loss)
             print(f"Epoch {epoch+1}/{total_epochs} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}")
+            print(f"Losses: {epoch_losses}\nVal Losses: {val_losses}")
+            print(f"="*50)
+            
             f.write(f"Epoch {epoch+1}/{total_epochs} - Train Loss: {epoch_loss:.4f} - Val Loss: {val_loss:.4f}\n")
 
         torch.save(model.state_dict(), "final_model.pth")

@@ -12,3 +12,4 @@ data/
 *.model
 *.vocab
 *.txt
+*.pth

@@ -6,36 +6,78 @@ import os
 import src.SpeechDataset as sd
 
 
+class BottlenecBlockk(nn.Module):
+    def __init__(self, in_channels, bottleneck_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        super(ResidualBlock, self).__init__()
+        
+        self.main_path = nn.Sequential(
+            nn.Conv2d(in_channels, bottleneck_channels, kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm2d(bottleneck_channels),
+            nn.ReLU(inplace=True),
+            
+            nn.Conv2d(bottleneck_channels, bottleneck_channels, kernel_size, stride, padding, bias=False),
+            nn.BatchNorm2d(bottleneck_channels),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(bottleneck_channels, out_channels, kernel_size, stride, padding, bias=False),
+            nn.BatchNorm2d(out_channels)
+        )
+
+        self.downsample = None
+        if in_channels != out_channels or stride != 1:
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
+            
+        self.relu = nn.ReLU(inplace=True)
+    def forward(self, x):
+        identity = x
+        
+        out = self.main_path(x)
+        
+        if self.downsample is not None:
+            identity = self.downsample(identity)
+        out += identity 
+        
+        return self.relu(out)
+
 class ResNetBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1):
         super(ResNetBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 3), stride=stride, padding=(1, 1), bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=(3, 3), padding=(1, 1), bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
+        
+        self.main_path = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=(3, 3), stride=stride, padding=(1, 1), bias=False)
+            nn.BatchNorm2d(out_channels)
+            nn.ReLU(inplace=True)
+            
+            nn.Conv2d(out_channels, out_channels, kernel_size=(3, 3), padding=(1, 1), bias=False)
+            nn.BatchNorm2d(out_channels)
+        )
 
-        self.shortcut = nn.Sequential()
+        self.downsample = None
         if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Sequential(
+            self.downsample = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels)
             )
-
+        
+        self.relu = nn.ReLU(inplace=True)
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
+        residual = x
+        
+        out = self.main_path(x)
 
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        out += self.shortcut(x)  # Skip connection
+        if self.downsample is not None:
+            residual = self.downsample(x)
+            
+        out += residual
         out = self.relu(out)
 
         return out
 
 class ResNet(nn.Module):
+    # Input shape [Batch, Channels, Height, Width]
     def __init__(self, num_classes=10):
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)

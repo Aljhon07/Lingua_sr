@@ -52,6 +52,7 @@ class SimpleCTCModel(nn.Module):
         
         self.layer1 = self._make_layer(32, 64, blocks=2)        
         self.layer2 = self._make_layer(64, 128, blocks=2)
+        self.layer3 = self._make_layer(128, 256, blocks=2)
         
         self.pool = nn.Sequential(
             nn.AdaptiveAvgPool2d((8, None)),
@@ -59,7 +60,7 @@ class SimpleCTCModel(nn.Module):
         )     
         
         self.fc = nn.Sequential(
-            nn.Linear(128 * 8, 512),
+            nn.Linear(256 * 8, 512),
             nn.LayerNorm(512),
             nn.GELU(),
             nn.Dropout(0.1),
@@ -84,9 +85,9 @@ class SimpleCTCModel(nn.Module):
         x = self.layer2(x)
         if verbose:
             print(f"After layer2: {x.shape}")
-        # x = self.layer3(x)
-        # if verbose:
-        #     print(f"After layer3: {x.shape}")
+        x = self.layer3(x)
+        if verbose:
+            print(f"After layer3: {x.shape}")
         x = self.pool(x)
         if verbose:
             print(f"After pooling: {x.shape}")
@@ -137,7 +138,7 @@ def train():
                     targets = targets.to(device) 
                     spec_len = spec_len.to(device) 
                     target_len = target_len.to(device)
-                    
+                    print(f"*"*75)
                     print(f"[Epoch {epoch + 1}] | Dataset: {idx}/{len(current_train_loaders)} | Batch {batch_idx}/{len(loader)}")
                     if (batch_idx + 1) & 10 == 0:
                         f.write(f"[Epoch {epoch + 1}] | Dataset: {idx}/{len(current_train_loaders)} | Batch {batch_idx}/{len(loader)}\n")
@@ -170,16 +171,22 @@ def train():
                     
                     pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
                     sample_pred = pred_raw[1]
+                    print(f"="*75)
                     print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
                     print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}")
+                    print(f"="*75)
                     if (batch_idx + 1) & 10 == 0:
                         f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}\n")
                         f.write(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}\n")
                     if(loss.item() < 0.5):
                         torch.save(model.state_dict(), "model.pth")
                         print("Loss is too low, stopping training.")
+                        f.write(f"="*50)
+                        f.write("Loss is too low, stopping training.\n")
+                        f.write(f"="*50)
                         break
-                        
+                    print(f"*"*75)
+                    
                     if batch_counter == 1 or batch_counter == 20 or (batch_counter % 50 == 0 and batch_counter < 350):
                         save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
                         print(f"Checkpoint saved at epoch {epoch}")

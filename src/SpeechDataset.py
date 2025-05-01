@@ -24,7 +24,7 @@ class SpeechDataset(Dataset):
         return len(self.data)
     
     def __getitem__(self, idx):
-        spec_path, tokenized_transcript, metadata = self.data[10]
+        spec_path, tokenized_transcript, metadata = self.data[idx]
         audio_path = os.path.join(config.WAVS_PATH, metadata['file_name'] + ".wav")
         
         # test, _, _ = audio_tools.load_audio(audio_path, torchaudio.info(audio_path), 16000)
@@ -85,7 +85,7 @@ def load_data():
         train_loaders.append(DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn))
         val_loaders.append(DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn))
 
-    loaders = {'train':[ train_loaders[0]], 'val': [val_loaders[0]]}
+    loaders = {'train':train_loaders, 'val': val_loaders}
 
     for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[0]):
         print(f"Features batch shape: {feature.shape}")

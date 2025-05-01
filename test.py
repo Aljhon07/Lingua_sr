@@ -60,7 +60,7 @@ class SimpleCTCModel(nn.Module):
         )     
         
         self.fc = nn.Sequential(
-            nn.Linear(256 * 8, 512),
+            nn.Linear(128 * 8, 512),
             nn.LayerNorm(512),
             nn.GELU(),
             nn.Dropout(0.1),
@@ -85,9 +85,9 @@ class SimpleCTCModel(nn.Module):
         x = self.layer2(x)
         if verbose:
             print(f"After layer2: {x.shape}")
-        x = self.layer3(x)
-        if verbose:
-            print(f"After layer3: {x.shape}")
+        # x = self.layer3(x)
+        # if verbose:
+        #     print(f"After layer3: {x.shape}")
         x = self.pool(x)
         if verbose:
             print(f"After pooling: {x.shape}")

@@ -115,9 +115,10 @@ def load_audio(audio_path, info, sample_rate = 16000):
             n_fft=400,
             win_length=400,
             hop_length=160,
+            power=1.0
         )
         
-    amplitude = T.AmplitudeToDB(stype='power', top_db=100)
+    amplitude = T.AmplitudeToDB(stype='power', top_db=80)
     padded_duration = 3
     initial_waveform, sample_rate = torchaudio.load(audio_path)
     # print(f"Loaded {audio_path}. Shape: {initial_waveform.shape} / Sample Rate: {sample_rate} / Duration: {info.num_frames / info.sample_rate} seconds")
@@ -125,33 +126,42 @@ def load_audio(audio_path, info, sample_rate = 16000):
     if info.sample_rate != sample_rate:
         print(f"Resampling {audio_path} to {sample_rate} Hz...")
         resampler = T.Resample(orig_freq=info.sample_rate, new_freq=sample_rate)
-        waveform = resampler(waveform)
-    
+        initial_waveform = resampler(initial_waveform)
+
+    print(f"[Initial Waveform Stats] Min: {initial_waveform.min()} / Max: {initial_waveform.max()} / Mean: {initial_waveform.mean()} / Std: {initial_waveform.std()}")    
     initial_waveform = initial_waveform.contiguous()
     trimmed_waveform = double_vad(initial_waveform, sample_rate=sample_rate)
+    if trimmed_waveform.abs().max() < 1e-5:
+        trimmed_waveform = torch.randn_like(trimmed_waveform) * 0.01
+    
+    # Peak normalize after all processing
+    trimmed_waveform /= trimmed_waveform.abs().max()
+    print(f"[Normalize Volume] Min: {trimmed_waveform.min()} / Max: {trimmed_waveform.max()} / Mean: {trimmed_waveform.mean()} / Std: {trimmed_waveform.std()}")
+    zero_ratio = (trimmed_waveform.abs() < 1e-5).float().mean()
+    print(f"Zero ratio: {zero_ratio:.1%}")
+    plt.hist(trimmed_waveform.numpy().flatten(), bins=100, range=(-1,1))
+    plt.title("Waveform Value Distribution")
+    plt.show()
+    # Padding
     current_length = trimmed_waveform.size(1)
     trimmed_duration = current_length / sample_rate
-    
     padded_duration, padding, save = get_padded_duration(trimmed_duration, current_length)
             
-    waveform = torch.nn.functional.pad(trimmed_waveform, (0, padding))
+    waveform = torch.nn.functional.pad(trimmed_waveform, (0, padding), value=1e-6)
     
     print(f"Audio Path: {audio_path} | Padded Duration: {padded_duration} | Original Length: {current_length} | Padded Length: {waveform.size(1)} | Orig (s): {info.num_frames / info.sample_rate} Trimmed (s): {trimmed_duration} Curr: {waveform.size(1) / sample_rate:.2f} seconds")
     initial_spectrogram = mel_spectrogram(waveform).contiguous()
     spectrogram = amplitude(initial_spectrogram)
+    
+    print(f"[Ampltude to DB] Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
     spectrogram_min = spectrogram.min(dim=2, keepdim=True)[0]
     spectrogram_max = spectrogram.max(dim=2, keepdim=True)[0]
 
-    # Normalize the spectrogram
+    
     normalized_spec = (spectrogram - spectrogram_min) / (spectrogram_max - spectrogram_min + 1e-6)
     print(f"Normalized Spectrogram: {normalized_spec.shape} / Min: {normalized_spec.min()} / Max: {normalized_spec.max()} / Mean: {normalized_spec.mean()} / Std: {normalized_spec.std()}")
-    # print(normalized_spec)
-    # print(f"Spectrogram Stats: Shape: {initial_spectrogram.shape} / Min: {initial_spectrogram.min()} / Max: {initial_spectrogram.max()} / Mean: {initial_spectrogram.mean()} / Std: {initial_spectrogram.std()}")
-    # print(f"Amplitude Stats: Shape: {spectrogram.shape} / Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
-    # print(f"Normalized Spectrogram Stats: Shape: {normalized_spec.shape} / Min: {normalized_spec.min()} / Max: {normalized_spec.max()} / Mean: {normalized_spec.mean()} / Std: {normalized_spec.std()}")
     
-    # plot_waveforms(initial_waveform, waveform)
-    # plot_spectrogram(initial_spectrogram, normalized_spec, sample_rate=16000)
+    plot_spectrogram(initial_spectrogram, normalized_spec, sample_rate=16000)
     return normalized_spec, padded_duration, save
 
 def double_vad(audio, sample_rate):

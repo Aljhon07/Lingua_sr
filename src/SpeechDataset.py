@@ -85,7 +85,7 @@ def load_data():
         train_loaders.append(DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn))
         val_loaders.append(DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn))
 
-    loaders = {'train':train_loaders, 'val': val_loaders}
+    loaders = {'train': train_loaders, 'val': val_loaders}
 
     for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[0]):
         print(f"Features batch shape: {feature.shape}")

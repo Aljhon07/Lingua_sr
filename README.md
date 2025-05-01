@@ -43,8 +43,8 @@ Model Arhictecture and Training Configuration:
 
 <<<<<<< HEAD
 
-## Usage
+## Setup
 
-1. Run pip install -r requirements.txt
-2. Install FFMPEG
-3. Install datasets from https://commonvoice.mozilla.org/en/datasets version 12.0, 16.1, 20.0
+1. pip install -r requirements.txt
+2. Install FFMPEG - https://www.youtube.com/watch?v=JR36oH35Fgg
+3. Install Dataset - https://commonvoice.mozilla.org/en/datasets - ung Common Voice Corpus 1

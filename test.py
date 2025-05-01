@@ -47,12 +47,16 @@ class ResidualBlock(nn.Module):
 class SimpleCTCModel(nn.Module):
     def __init__(self, vocab_size):
         super().__init__()
-        self.conv = nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=5//2)
-        self.bn1 = nn.BatchNorm2d(32)
+        self.initial_downsample = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=5//2),
+            nn.GELU(),
+            nn.BatchNorm2d(32)
+        )
+        
         
         self.layer1 = self._make_layer(32, 64, blocks=2)        
         self.layer2 = self._make_layer(64, 128, blocks=2)
-        self.layer3 = self._make_layer(128, 256, blocks=2)
+        # self.layer3 = self._make_layer(128, 256, blocks=2)
         
         self.pool = nn.Sequential(
             nn.AdaptiveAvgPool2d((8, None)),
@@ -60,13 +64,16 @@ class SimpleCTCModel(nn.Module):
         )     
         
         self.fc = nn.Sequential(
-            nn.Linear(256 * 8, 512),
+            nn.Linear(128 * 8, 512),
             nn.LayerNorm(512),
             nn.GELU(),
             nn.Dropout(0.3),
             nn.Linear(512, vocab_size)
         )
  
+        nn.init.xavier_uniform_(self.fc[-1].weight, gain=0.01)  # Tiny initial weights
+        nn.init.constant_(self.fc[-1].bias, -3.0)  # Strong blank suppression
+        self.fc[-1].bias.data[0] = 0.0
     def _make_layer(self, in_channels, out_channels, blocks):
         layers = []
         for _ in range(blocks):
@@ -77,17 +84,18 @@ class SimpleCTCModel(nn.Module):
     def forward(self, x):
         if verbose:
             print(f"Input Shape: {x.shape}")
-        x = F.gelu(self.conv(x))
-        x = self.bn1(x)
+        x = self.initial_downsample(x)
+        if verbose:
+            print(f"After downsample: {x.shape}")
         x = self.layer1(x)
         if verbose:
             print(f"After layer1: {x.shape}")
         x = self.layer2(x)
         if verbose:
             print(f"After layer2: {x.shape}")
-        x = self.layer3(x)
-        if verbose:
-            print(f"After layer3: {x.shape}")
+        # x = self.layer3(x)
+        # if verbose:
+        #     print(f"After layer3: {x.shape}")
         x = self.pool(x)
         if verbose:
             print(f"After pooling: {x.shape}")
@@ -112,6 +120,17 @@ def train():
     loaders = sd.load_data()
     epoch_losses = []
     val_losses = []
+    
+    # Group parameters by type
+    downsample_params = [p for n,p in model.named_parameters()
+                if 'initial_downsample' in n and 'weight' in n]
+    conv_params = [p for n,p in model.named_parameters() 
+                if 'layer' in n and 'weight' in n]
+    bn_params = [p for n,p in model.named_parameters() 
+                if 'bn' in n]
+    fc_params = [p for n,p in model.named_parameters() 
+                if 'fc' in n]
+
     # num_batches_per_epoch = sum(len(loader) for loader in loaders['train'])
     with open(log_file, 'a') as f:
         f.write(f"Using device: {device}\n")
@@ -156,7 +175,7 @@ def train():
                     softmax_output = output[:, 0, :]
                     outputs_sample = outputs[:, 0, :]
 
-                    print(f"Outputs std/mean: {outputs.std():.4f}/{outputs.mean():.4f}")
+                    print(f"Outputs std/mean: {outputs.std().item():.4f}/{outputs.mean().item():.4f}")
                     print(f"Outputs First 10: {outputs_sample[0][:10].tolist()}")
                     print(f"Outputs Last 10: {outputs_sample[0][-10:].tolist()}")
                     print(f"First 10: {softmax_output[0][:10].tolist()}")
@@ -167,7 +186,9 @@ def train():
                         raise ValueError("NaN detected!!")
                     
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.fc.parameters(), 0.5)
+                    torch.nn.utils.clip_grad_norm_(downsample_params, max_norm=0.5)  # Tighten downsample weights
+                    torch.nn.utils.clip_grad_norm_(conv_params, max_norm=0.5)  # Tighten conv weights
+                    torch.nn.utils.clip_grad_norm_(fc_params, max_norm=0.3)      # FC layers
                     epoch_loss += loss.item()
                     for name, param in model.named_parameters():
                         if param.grad is not None:
@@ -204,6 +225,7 @@ def train():
 
             if epoch_loss < 0.5:
                 print("Loss is too low, stopping training.")
+                save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename="final_model.pth")
                 break        
                 
             val_loss = 0.0
@@ -218,7 +240,7 @@ def train():
                         loss = criterion(input, targets, spec_len // 2, target_len)
                         preds = torch.argmax(input, dim=2).transpose(0, 1).contiguous()
                         print(f"Loss: {loss.item()}")
-                        print(f"Target: {targets[0].tolist()}\nPredicted: {ctc_decoder(preds[0].tolist())}")
+                        print(f"Target [{target_len[0]}]:  {targets[0].tolist()}\nPredicted: {ctc_decoder(preds[0].tolist())}")
                         val_loss += loss.item()
                                 
             epoch_loss /= num_batches_per_epoch

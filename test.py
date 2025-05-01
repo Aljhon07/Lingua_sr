@@ -106,7 +106,7 @@ def train():
     total_epochs = 100
     log_file = os.path.join(config.LOG_DIR, f"test_{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
-    optimizer = optim.AdamW(model.parameters(), lr=0.001)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     batch_counter = 0
     loaders = sd.load_data()
@@ -202,7 +202,6 @@ def train():
 
             scheduler.step(epoch_loss / num_batches_per_epoch)
 
-        
             if epoch_loss < 0.5:
                 print("Loss is too low, stopping training.")
                 break        
@@ -262,87 +261,6 @@ def load_checkpoint(model, optimizer, filename="checkpoint.pth"):
     print(f"📦 Loaded checkpoint from epoch {start_epoch}")
     return start_epoch, loss
 
-
-BATCH_SIZE = 32
-SEQ_LEN = 501  # Example sequence length
-INPUT_DIM = 80  # Input feature dimension
-TARGET_LEN = 20  # Example target sequence length
-VOCAB_SIZE = 500  # Vocabulary size for targets
-
-class FixedCTCDataset(Dataset):
-    def __init__(self, total_samples):
-        self.inputs = [torch.randn(INPUT_DIM, SEQ_LEN).unsqueeze(0) for _ in range(total_samples)]
-        self.input_lengths = [torch.randint(SEQ_LEN - 50, SEQ_LEN + 1, (1,)).item() for _ in range(total_samples)]
-        self.targets = [torch.randint(1, VOCAB_SIZE, (TARGET_LEN,)) for _ in range(total_samples)]
-        self.target_lengths = [torch.randint(10, TARGET_LEN + 1, (1,)).item() for _ in range(total_samples)]
-
-    def __len__(self):
-        return len(self.inputs)
-
-    def __getitem__(self, idx):
-        return self.inputs[idx], self.input_lengths[idx], self.targets[idx], self.target_lengths[idx]
-    
-# Collate function to batch variable-length inputs
-def collate_fn(batch):
-    inputs, input_lengths, targets, target_lengths = zip(*batch)
-    inputs = torch.stack(inputs)
-    input_lengths = torch.tensor(input_lengths, dtype=torch.long)
-    targets = torch.stack(targets)
-    target_lengths = torch.tensor(target_lengths, dtype=torch.long)
-    return inputs, input_lengths, targets, target_lengths
-
-# Create DataLoader
-
-def test():
-
-    # # Generate random input data
-    # inputs = torch.randn(BATCH_SIZE, INPUT_DIM, SEQ_LEN , dtype=torch.float32)
-    # inputs = inputs.unsqueeze(1)  
-
-    # # Input lengths (can vary per sample)
-    # input_lengths = torch.randint(low=SEQ_LEN - 50, high=SEQ_LEN + 1, size=(BATCH_SIZE,), dtype=torch.long)
-
-    # # Random target data within vocabulary
-    # targets = torch.randint(1, VOCAB_SIZE, (BATCH_SIZE, TARGET_LEN), dtype=torch.long)
-
-    # # Target lengths (can also vary per sample)
-    # target_lengths = torch.randint(low=10, high=TARGET_LEN + 1, size=(BATCH_SIZE,), dtype=torch.long)
-
-    dataset = FixedCTCDataset(600)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
-
-    model = SimpleCTCModel(VOCAB_SIZE)
-    criterion = nn.CTCLoss(blank=0, zero_infinity=True)  # blank is the last index.
-    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
-    
-    for epoch in range(20):  # Loop through dataset 3 times (just an example)
-        print(f"\n--- Epoch {epoch + 1} ---")
-        for i, (inputs, input_lengths, targets, target_lengths) in enumerate(dataloader):
-            model.train()
-            optimizer.zero_grad()
-            
-            outputs = model(inputs)
-            log_probs = torch.nn.functional.log_softmax(outputs, dim=-1)
-            preds = torch.argmax(log_probs, dim=2).transpose(0, 1).contiguous()
-
-          
-                
-            loss = criterion(log_probs, targets, input_lengths, target_lengths)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
-            for name, param in model.named_parameters():
-                if param.grad is not None:
-                    print(f"Gradient for {name}: {param.grad.norm():.4f}")
-            optimizer.step()
-
-            print(f"Target: {targets[1]}\nRaw Prediction: {preds[1].tolist()}")
-            print(f"Epoch {epoch + 1} | Batch {i + 1}/{len(dataloader)} | Loss: {loss.item():.4f}")
-            print(f"="*50)
-            
-            
-        
-    
 if __name__ == "__main__":
     # test()
     train()

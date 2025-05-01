@@ -60,11 +60,11 @@ class SimpleCTCModel(nn.Module):
         )     
         
         self.fc = nn.Sequential(
-            nn.Linear(128 * 8, 512),
+            nn.Linear(256 * 8, 512),
             nn.LayerNorm(512),
             nn.GELU(),
-            nn.Dropout(0.1),
-            nn.Linear(512, vocab_size),
+            nn.Dropout(0.3),
+            nn.Linear(512, vocab_size)
         )
  
     def _make_layer(self, in_channels, out_channels, blocks):
@@ -85,26 +85,28 @@ class SimpleCTCModel(nn.Module):
         x = self.layer2(x)
         if verbose:
             print(f"After layer2: {x.shape}")
-        # x = self.layer3(x)
-        # if verbose:
-        #     print(f"After layer3: {x.shape}")
+        x = self.layer3(x)
+        if verbose:
+            print(f"After layer3: {x.shape}")
         x = self.pool(x)
         if verbose:
             print(f"After pooling: {x.shape}")
-        x = x.view(x.size(0), x.size(3), -1).contiguous()  
+        x = x.view(x.size(0), x.size(3), -1 ).contiguous()  
         if verbose:
             print(f"After view: {x.shape}")
         x = self.fc(x)
+        if verbose:
+            print(f"After fc: {x.shape}")
 
-        return x.transpose(0, 1).contiguous()  # (T, B, C)
-
+        return x.transpose(0, 1).contiguous() 
+    
 # ======= Training Pipeline =======
 def train():
     model = SimpleCTCModel(750).to(device)
     total_epochs = 100
     log_file = os.path.join(config.LOG_DIR, f"test_{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
-    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
+    optimizer = optim.AdamW(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     batch_counter = 0
     loaders = sd.load_data()
@@ -120,11 +122,14 @@ def train():
             epoch_loss = 0.0
 
             if epoch < 25:
-                current_train_loaders = loaders['train'][:3] 
+                current_train_loaders = loaders['train'][:2]
+                current_val_loaders = loaders['val'][:2]  # Use only first 2 datasets
             elif 25 <= epoch < 50:
                 current_train_loaders = loaders['train'][:5] 
+                current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
             else:
                 current_train_loaders = loaders['train']
+                current_val_loaders = loaders['val']
             
             num_batches_per_epoch = sum(len(loader) for loader in current_train_loaders)
             
@@ -162,7 +167,7 @@ def train():
                         raise ValueError("NaN detected!!")
                     
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+                    torch.nn.utils.clip_grad_norm_(model.fc.parameters(), 0.5)
                     epoch_loss += loss.item()
                     for name, param in model.named_parameters():
                         if param.grad is not None:
@@ -197,12 +202,10 @@ def train():
 
             scheduler.step(epoch_loss / num_batches_per_epoch)
 
-            if epoch < 25:
-                current_val_loaders = loaders['val'][:3]  # Use only first 2 datasets
-            elif 25 <= epoch < 50:
-                current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
-            else:
-                current_val_loaders = loaders['val']
+        
+            if epoch_loss < 0.5:
+                print("Loss is too low, stopping training.")
+                break        
                 
             val_loss = 0.0
             for idx, (loader) in enumerate(current_val_loaders):

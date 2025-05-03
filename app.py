@@ -33,7 +33,7 @@ def transcibe():
         audio.to_wav(save_path, save_path.replace('.m4a', '.wav'))        
         os.remove(save_path)
         
-        return jsonify({'transcript': "Hello World!"}), 200
+        return jsonify({'transcript': "Lorem Ipsum"}), 200
 
     except Exception as e:
         raise e

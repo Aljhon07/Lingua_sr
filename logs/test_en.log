@@ -67,38 +67,14 @@ Model Summary: SimpleCTCModel(
     (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
   )
   (fc): Sequential(
-    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (0): Linear(in_features=2048, out_features=512, bias=True)
     (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
     (2): GELU(approximate='none')
-    (3): Dropout(p=0.1, inplace=False)
+    (3): Dropout(p=0.3, inplace=False)
     (4): Linear(in_features=512, out_features=750, bias=True)
   )
 )
-[Epoch 1] | Dataset: 0/1 | Batch 0/26
-[Epoch 1] - [Batch 1/2600] Loss: 52.9936
-Target: tensor([ 40, 580, 724, 654, 330,  44, 176, 732,  37, 517, 371,  65,  44,  40,
-         76, 100, 330])
-Raw Prediction: [160, 14, 171, 184, 270, 171, 311, 38, 395, 98, 171, 256, 171, 171, 171, 17, 17, 171, 98, 311, 663, 160, 160, 184, 171, 311, 374, 179, 218, 168, 171, 256, 14, 171, 337, 56, 311, 663, 171, 707, 630, 211, 15, 14, 171, 374, 165, 663, 469, 311, 395, 311, 311, 171, 311, 276, 171, 337, 8, 171, 526, 15, 395, 171, 171, 549, 15, 337, 14, 171, 171, 374, 256, 56, 14, 15, 184, 171, 176, 15, 256, 374, 15, 171, 171, 406, 256, 362, 211, 171, 194, 171, 395, 14, 7, 15, 211, 406, 256, 8, 395, 374, 311, 171, 56, 171, 211, 171, 171, 171, 513, 373, 171, 311, 395, 311, 15, 7, 311, 171, 14, 171, 214, 171, 333, 171, 171, 171, 171, 56, 17, 218, 171, 14, 362, 211, 171, 171, 311, 171, 15, 256, 17, 15, 311, 374, 171, 256, 168, 211]
-[Epoch 1] | Dataset: 0/1 | Batch 3/26
-[Epoch 1] - [Batch 4/2600] Loss: 8.5116
-Target: tensor([ 40, 580, 724, 654, 330,  44, 176, 732,  37, 517, 371,  65,  44,  40,
-         76, 100, 330])
-Raw Prediction: [371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371]
-[Epoch 1] | Dataset: 0/1 | Batch 4/26
-[Epoch 1] - [Batch 5/2600] Loss: 7.5073
-Target: tensor([ 40, 580, 724, 654, 330,  44, 176, 732,  37, 517, 371,  65,  44,  40,
-         76, 100, 330])
-Raw Prediction: [371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371]
-[Epoch 1] | Dataset: 0/1 | Batch 15/26
-[Epoch 1] - [Batch 16/2600] Loss: 1.3007
-Target: tensor([ 40, 580, 724, 654, 330,  44, 176, 732,  37, 517, 371,  65,  44,  40,
-         76, 100, 330])
-Raw Prediction: [40, 580, 371, 371, 371, 44, 176, 732, 37, 517, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 65, 44, 40, 76, 100, 371]
-[Epoch 1] | Dataset: 0/1 | Batch 16/26
-[Epoch 1] - [Batch 17/2600] Loss: 0.9521
-Target: tensor([ 40, 580, 724, 654, 330,  44, 176, 732,  37, 517, 371,  65,  44,  40,
-         76, 100, 330])
-Raw Prediction: [40, 580, 371, 371, 330, 44, 176, 732, 37, 517, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 371, 65, 44, 40, 76, 100, 371]
+[Epoch 1] | Dataset: 0/1 | Batch 0/7
 Using device: cpu
 Model Summary: SimpleCTCModel(
   (conv): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
@@ -140,26 +116,6 @@ Model Summary: SimpleCTCModel(
       (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
       (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (layer3): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       (relu): ReLU(inplace=True)
     )
   )
@@ -168,14 +124,14 @@ Model Summary: SimpleCTCModel(
     (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
   )
   (fc): Sequential(
-    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (0): Linear(in_features=2048, out_features=512, bias=True)
     (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
     (2): GELU(approximate='none')
     (3): Dropout(p=0.3, inplace=False)
     (4): Linear(in_features=512, out_features=750, bias=True)
   )
 )
-[Epoch 1] | Dataset: 0/1 | Batch 0/26
+[Epoch 1] | Dataset: 0/1 | Batch 0/7
 Using device: cpu
 Model Summary: SimpleCTCModel(
   (conv): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
@@ -217,188 +173,6 @@ Model Summary: SimpleCTCModel(
       (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
       (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (layer3): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (pool): Sequential(
-    (0): AdaptiveAvgPool2d(output_size=(8, None))
-    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
-  )
-  (fc): Sequential(
-    (0): Linear(in_features=1024, out_features=512, bias=True)
-    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
-    (2): GELU(approximate='none')
-    (3): Dropout(p=0.3, inplace=False)
-    (4): Linear(in_features=512, out_features=750, bias=True)
-  )
-)
-[Epoch 1] | Dataset: 0/1 | Batch 0/26
-[Epoch 1] - [Batch 1/2600] Loss: 54.1172
-Target: tensor([ 40, 580, 724, 654, 330,  44, 176, 732,  37, 517, 371,  65,  44,  40,
-         76, 100, 330])
-Raw Prediction: [480, 305, 708, 381, 480, 20, 513, 507, 115, 161, 628, 170, 605, 605, 134, 659, 81, 687, 513, 328, 305, 468, 480, 465, 115, 462, 660, 465, 468, 480, 311, 519, 55, 59, 559, 1, 605, 20, 109, 505, 628, 451, 78, 519, 513, 637, 715, 109, 519, 519, 598, 687, 407, 660, 480, 465, 705, 109, 480, 113, 457, 628, 81, 109, 480, 628, 9, 628, 513, 54, 660, 212, 115, 81, 573, 109, 480, 161, 384, 480, 480, 301, 480, 247, 628, 465, 328, 112, 660, 171, 115, 628, 54, 78, 573, 257, 109, 338, 511, 221, 430, 465, 480, 400, 637, 660, 633, 513, 687, 149, 480, 113, 628, 179, 660, 171, 605, 669, 69, 133, 628, 519, 660, 628, 660, 480, 628, 384, 105, 660, 431, 301, 179, 628, 221, 480, 547, 649, 501, 513, 659, 381, 628, 480, 480, 216, 539, 175, 628, 480]
-Using device: cpu
-Model Summary: SimpleCTCModel(
-  (conv): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-  (bn1): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-  (layer1): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (layer2): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (layer3): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (pool): Sequential(
-    (0): AdaptiveAvgPool2d(output_size=(8, None))
-    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
-  )
-  (fc): Sequential(
-    (0): Linear(in_features=1024, out_features=512, bias=True)
-    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
-    (2): GELU(approximate='none')
-    (3): Dropout(p=0.3, inplace=False)
-    (4): Linear(in_features=512, out_features=750, bias=True)
-  )
-)
-[Epoch 1] | Dataset: 0/1 | Batch 0/26
-[Epoch 1] - [Batch 1/2600] Loss: 31.9563
-Target: tensor([ 92, 353, 309,  95, 728,  87,  30, 728, 739, 727, 169, 101,   5,  36,
-        146, 381, 321,  69,   5, 723, 415, 136, 126, 740,  50,  80, 733])
-Raw Prediction: [731, 321, 558, 145, 481, 627, 714, 73, 677, 250, 481, 585, 585, 583, 585, 270, 99, 250, 102, 617, 714, 600, 617, 63, 278, 58, 102, 497, 554, 573, 585, 554, 99, 617, 102, 250, 126, 617, 37, 677, 625, 126, 99, 671, 163, 585, 73, 186, 677, 585, 699, 99, 99, 73, 523, 617, 617, 602, 360, 136, 360, 99, 617, 682, 318, 572, 473, 246, 250, 597, 558, 8, 585, 277, 102, 572, 617, 617, 126, 102, 277, 250, 278, 622, 617, 572, 705, 250, 585, 126, 585, 102, 225, 250, 617, 706, 617, 705, 10, 83, 318, 627, 126, 145, 60, 627, 602, 225, 618, 617, 617, 314, 585, 360, 627, 585, 671, 625, 617, 617, 225, 705, 246, 450, 250, 694, 585, 278, 250, 250, 356, 278, 481, 705, 556, 585, 682, 246, 73, 250, 99, 250, 250, 542, 250, 99, 585, 617, 625, 617]
-Using device: cpu
-Model Summary: SimpleCTCModel(
-  (conv): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-  (bn1): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-  (layer1): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (layer2): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
-  (layer3): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       (relu): ReLU(inplace=True)
     )
   )
@@ -415,10 +189,9 @@ Model Summary: SimpleCTCModel(
   )
 )
 [Epoch 1] | Dataset: 0/1 | Batch 0/7
-[Epoch 1] - [Batch 1/700] Loss: 154.4402
+[Epoch 1] - [Batch 1/700] Loss: 144.0528
 Target: tensor([365,  11,  51,  65])
-Raw Prediction: [89, 300, 579, 324, 306, 252, 579, 156, 380, 508, 585, 413, 300, 54, 722, 292, 251, 300, 89, 601, 661, 256, 197, 22, 541, 197, 87, 601, 300, 265, 274, 156, 197, 251, 300, 156, 129, 744, 35, 300, 292, 277, 300, 601, 738, 706, 619, 300, 89, 554, 302, 579, 705, 579, 306, 282, 151, 300, 706, 493, 578, 359, 300, 300, 710, 626, 423, 239, 197, 705, 89, 180, 45, 274, 300, 590, 325, 35, 324, 705, 19, 544, 738, 156, 265, 156, 91, 590, 300, 156, 541, 263, 508, 359, 21, 601, 541, 156, 548, 166]
-[Epoch 1] | Dataset: 0/1 | Batch 3/7
+Raw Prediction: [641, 494, 731, 449, 281, 199, 576, 209, 538, 576, 104, 641, 104, 731, 0, 745, 247, 602, 554, 210, 104, 683, 641, 554, 218, 747, 274, 641, 67, 527, 683, 641, 449, 641, 641, 364, 731, 137, 137, 63, 641, 641, 591, 397, 104, 0, 183, 183, 458, 625, 641, 591, 736, 689, 591, 639, 104, 689, 608, 104, 745, 689, 736, 609, 747, 554, 449, 713, 327, 180, 137, 689, 0, 104, 331, 104, 137, 104, 689, 534, 274, 641, 745, 736, 731, 591, 553, 641, 38, 458, 554, 199, 534, 340, 104, 437, 104, 458, 553, 220]
 Using device: cpu
 Model Summary: SimpleCTCModel(
   (conv): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
@@ -463,26 +236,6 @@ Model Summary: SimpleCTCModel(
       (relu): ReLU(inplace=True)
     )
   )
-  (layer3): Sequential(
-    (0): ResidualBlock(
-      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (downsample): Sequential(
-        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-      (relu): ReLU(inplace=True)
-    )
-    (1): ResidualBlock(
-      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (relu): ReLU(inplace=True)
-    )
-  )
   (pool): Sequential(
     (0): AdaptiveAvgPool2d(output_size=(8, None))
     (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
@@ -496,46 +249,26 @@ Model Summary: SimpleCTCModel(
   )
 )
 [Epoch 1] | Dataset: 0/1 | Batch 0/7
-[Epoch 1] - [Batch 1/700] Loss: 153.2033
+[Epoch 1] - [Batch 1/700] Loss: 158.3244
 Target: tensor([365,  11,  51,  65])
-Raw Prediction: [168, 168, 333, 271, 628, 415, 515, 225, 697, 359, 744, 193, 132, 333, 225, 697, 333, 333, 534, 333, 318, 531, 333, 604, 272, 259, 695, 333, 225, 528, 497, 452, 7, 91, 591, 225, 170, 515, 274, 110, 188, 497, 528, 628, 225, 668, 333, 116, 604, 540, 301, 153, 315, 498, 528, 133, 154, 452, 534, 221, 604, 217, 697, 352, 695, 188, 615, 272, 116, 188, 170, 704, 41, 272, 531, 628, 546, 218, 497, 531, 117, 531, 318, 531, 695, 695, 733, 111, 333, 333, 497, 604, 591, 352, 528, 447, 695, 333, 697, 596]
+Raw Prediction: [623, 431, 622, 617, 485, 671, 357, 727, 59, 635, 504, 504, 57, 176, 588, 595, 121, 376, 426, 459, 504, 8, 357, 510, 97, 533, 533, 451, 615, 632, 175, 617, 346, 397, 415, 617, 135, 677, 243, 510, 357, 415, 332, 121, 436, 533, 533, 363, 650, 121, 533, 533, 727, 533, 357, 175, 617, 166, 504, 533, 459, 110, 135, 533, 135, 135, 74, 363, 80, 397, 87, 429, 60, 57, 110, 653, 357, 639, 601, 502, 504, 431, 533, 615, 595, 504, 533, 121, 125, 135, 426, 533, 533, 625, 397, 617, 363, 716, 533, 97]
 [Epoch 1] | Dataset: 0/1 | Batch 3/7
-[Epoch 1] - [Batch 4/700] Loss: 11.2274
+[Epoch 1] - [Batch 4/700] Loss: 110.6664
 Target: tensor([365,  11,  51,  65])
-Raw Prediction: [51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51]
+Raw Prediction: [365, 426, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 65, 365, 65, 365, 65, 65, 365, 365, 365, 365]
 [Epoch 1] | Dataset: 0/1 | Batch 4/7
-[Epoch 1] - [Batch 5/700] Loss: 8.3776
+[Epoch 1] - [Batch 5/700] Loss: 93.6339
 Target: tensor([365,  11,  51,  65])
-Raw Prediction: [51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51]
-Epoch 1/100 - Train Loss: 35.8221 - Val Loss: 5.6850
+Raw Prediction: [365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365, 365]
+Epoch 1/100 - Train Loss: 110.8218 - Val Loss: 76.5618
 [Epoch 2] | Dataset: 0/1 | Batch 0/7
-[Epoch 2] - [Batch 8/700] Loss: 5.1711
-Target: tensor([365,  11,  51,  65])
-Raw Prediction: [51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51]
-[Epoch 2] | Dataset: 0/1 | Batch 3/7
-[Epoch 2] - [Batch 11/700] Loss: 2.9077
-Target: tensor([365,  11,  51,  65])
-Raw Prediction: [51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51]
-[Epoch 2] | Dataset: 0/1 | Batch 4/7
-[Epoch 2] - [Batch 12/700] Loss: 2.1949
-Target: tensor([365,  11,  51,  65])
-Raw Prediction: [51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51]
-Epoch 2/100 - Train Loss: 2.9810 - Val Loss: 4.1110
-[Epoch 3] | Dataset: 0/1 | Batch 0/7
-[Epoch 3] - [Batch 15/700] Loss: 0.8529
-Target: tensor([365,  11,  51,  65])
-Raw Prediction: [365, 11, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 65]
-==================================================Loss is too low, stopping training.
-==================================================Epoch 3/100 - Train Loss: 0.2886 - Val Loss: 2.8977
-[Epoch 4] | Dataset: 0/1 | Batch 0/7
-[Epoch 4] - [Batch 18/700] Loss: 0.3717
-Target: tensor([365,  11,  51,  65])
-Raw Prediction: [365, 11, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 65]
-==================================================Loss is too low, stopping training.
-==================================================Using device: cpu
+Using device: cpu
 Model Summary: SimpleCTCModel(
-  (conv): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-  (bn1): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
   (layer1): Sequential(
     (0): ResidualBlock(
       (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
@@ -576,23 +309,150 @@ Model Summary: SimpleCTCModel(
       (relu): ReLU(inplace=True)
     )
   )
-  (layer3): Sequential(
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/1 | Batch 0/7
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
     (0): ResidualBlock(
-      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       (downsample): Sequential(
-        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
-        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       )
       (relu): ReLU(inplace=True)
     )
     (1): ResidualBlock(
-      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/1 | Batch 0/7
+[Epoch 1] - [Batch 1/700] Loss: 155.4499
+Target: tensor([365,  11,  51,  65])
+Raw Prediction: [589, 245, 565, 275, 346, 206, 41, 275, 245, 572, 453, 589, 589, 301, 507, 301, 589, 592, 255, 589, 453, 541, 245, 589, 100, 315, 132, 23, 611, 332, 245, 560, 727, 245, 589, 629, 572, 589, 228, 131, 103, 103, 684, 727, 727, 151, 228, 589, 626, 560, 206, 245, 568, 684, 131, 626, 315, 626, 589, 589, 589, 572, 349, 337, 541, 279, 595, 641, 541, 440, 245, 182, 605, 103, 245, 572, 279, 626, 589, 541, 346, 315, 588, 227, 103, 292, 279, 453, 173, 245, 565, 337, 93, 349, 626, 626, 641, 727, 568, 589]
+[Epoch 1] | Dataset: 0/1 | Batch 3/7
+[Epoch 1] - [Batch 4/700] Loss: 10.6716
+Target: tensor([365,  11,  51,  65])
+Raw Prediction: [65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+[Epoch 1] | Dataset: 0/1 | Batch 4/7
+[Epoch 1] - [Batch 5/700] Loss: 7.7307
+Target: tensor([365,  11,  51,  65])
+Raw Prediction: [65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+Epoch 1/100 - Train Loss: 36.4112 - Val Loss: 5.4316
+[Epoch 2] | Dataset: 0/1 | Batch 0/7
+[Epoch 2] - [Batch 8/700] Loss: 3.8204
+Target: tensor([365,  11,  51,  65])
+Raw Prediction: [65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+[Epoch 2] | Dataset: 0/1 | Batch 3/7
+[Epoch 2] - [Batch 11/700] Loss: 1.1572
+Target: tensor([365,  11,  51,  65])
+Raw Prediction: [65, 11, 51, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+[Epoch 2] | Dataset: 0/1 | Batch 4/7
+[Epoch 2] - [Batch 12/700] Loss: 0.6923
+Target: tensor([365,  11,  51,  65])
+Raw Prediction: [365, 11, 51, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+==================================================Loss is too low, stopping training.
+==================================================Epoch 2/100 - Train Loss: 1.4975 - Val Loss: 3.4460
+[Epoch 3] | Dataset: 0/1 | Batch 0/7
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       (relu): ReLU(inplace=True)
     )
   )
@@ -609,7 +469,434 @@ Model Summary: SimpleCTCModel(
   )
 )
 [Epoch 1] | Dataset: 0/2 | Batch 0/7
-[Epoch 1] - [Batch 1/2200] Loss: 71.2056
-Target: tensor([383,  36, 737, 744, 723, 737,   0,   0,   0,   0,   0,   0,   0,   0,
+[Epoch 1] - [Batch 1/2200] Loss: 68.8070
+Target: tensor([  9,  27,  24, 144,  36,  71,   0,   0,   0,   0,   0,   0,   0,   0,
           0,   0])
-Raw Prediction: [22, 742, 742, 235, 211, 542, 211, 542, 542, 211, 97, 223, 223, 352, 97, 2, 308, 316, 318, 658, 732, 637, 211, 355, 619, 235, 171, 301, 103, 200, 749, 235, 89, 742, 229, 35, 211, 500, 229, 548, 340, 542, 742, 597, 316, 637, 211, 742, 397, 742, 235, 22, 544, 637, 542, 722, 355, 627, 211, 742, 187, 71, 146, 542, 542, 742, 201, 506, 698, 123, 742, 500, 169, 42, 63, 235, 97, 123, 542, 508, 355, 235, 42, 404, 211, 46, 619, 97, 214, 637, 451, 347, 566, 710, 401, 742, 742, 693, 63, 584]
+Raw Prediction: [229, 87, 683, 655, 53, 668, 87, 53, 275, 242, 275, 655, 632, 332, 518, 709, 87, 87, 479, 518, 87, 434, 275, 113, 636, 608, 511, 60, 518, 70, 70, 538, 275, 87, 655, 68, 688, 173, 113, 683, 317, 511, 101, 608, 87, 302, 687, 688, 600, 211, 5, 655, 5, 490, 479, 250, 48, 329, 275, 53, 655, 655, 687, 127, 5, 400, 608, 173, 703, 4, 211, 655, 138, 506, 5, 87, 687, 53, 185, 356, 520, 53, 5, 490, 655, 87, 659, 73, 27, 687, 552, 236, 93, 710, 688, 260, 275, 275, 666, 540]
+[Epoch 1] | Dataset: 0/2 | Batch 3/7
+[Epoch 1] - [Batch 4/2200] Loss: 49.4547
+Target: tensor([142, 407, 728, 643,  51, 359, 730, 570,  38,   0,   0,   0,   0,   0,
+          0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 0/2 | Batch 4/7
+[Epoch 1] - [Batch 5/2200] Loss: 42.6324
+Target: tensor([ 39,   5, 411,  20,  50,  49,  54, 662,   0,   0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 1/2 | Batch 0/15
+[Epoch 1] - [Batch 8/2200] Loss: 24.1230
+Target: tensor([189, 253, 238,  34, 685, 725,  78,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 1/2 | Batch 3/15
+[Epoch 1] - [Batch 11/2200] Loss: 14.2064
+Target: tensor([ 42,  10, 727,  79, 395, 210, 105, 724, 149, 212, 276, 726,   0,   0,
+          0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 1/2 | Batch 4/15
+[Epoch 1] - [Batch 12/2200] Loss: 13.3177
+Target: tensor([ 48, 353, 188, 109,  14,  30,   7, 330, 746,  38,  22, 170, 109, 333,
+          0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+Epoch 1/100 - Train Loss: 23.7024 - Val Loss: 7.9159
+[Epoch 2] | Dataset: 0/2 | Batch 0/7
+[Epoch 2] - [Batch 23/2200] Loss: 8.0593
+Target: tensor([ 48,  44, 533, 621, 113,  37, 187,   0,   0,   0,   0,   0,   0,   0,
+          0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 0/2 | Batch 3/7
+[Epoch 2] - [Batch 26/2200] Loss: 7.3152
+Target: tensor([598,  27,  26,  38, 726, 732, 118,  18, 745, 488,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 0/2 | Batch 4/7
+[Epoch 2] - [Batch 27/2200] Loss: 7.4862
+Target: tensor([  7, 710, 247, 142, 225, 104, 677,   0,   0,   0,   0,   0,   0,   0,
+          0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 1/2 | Batch 0/15
+[Epoch 2] - [Batch 30/2200] Loss: 7.0155
+Target: tensor([ 65, 142,   9, 657, 254, 102, 737, 567,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 1/2 | Batch 3/15
+[Epoch 2] - [Batch 33/2200] Loss: 6.7145
+Target: tensor([ 30,  21, 311, 517, 122,  86, 718,  74, 588, 180, 734, 728,   0,   0,
+          0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 1/2 | Batch 4/15
+[Epoch 2] - [Batch 34/2200] Loss: 6.7559
+Target: tensor([ 65,  44, 379,  69, 195,  31,  62, 725,  37,  39,  21, 218,  37,   0,
+          0,   0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+Epoch 2/100 - Train Loss: 6.8964 - Val Loss: 6.4202
+[Epoch 3] | Dataset: 0/2 | Batch 0/7
+[Epoch 3] - [Batch 45/2200] Loss: 6.4076
+Target: tensor([165,  44, 252, 595,  39, 142,   5,  34, 685,  88,   0,   0,   0,   0,
+          0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/2 | Batch 0/7
+[Epoch 1] - [Batch 1/2200] Loss: 74.3147
+Target: tensor([165, 633, 490,  34,  28, 733,  37,   0,   0,   0,   0,   0,   0,   0,
+          0,   0])
+Raw Prediction: [122, 12, 190, 642, 684, 3, 642, 642, 249, 86, 190, 17, 207, 642, 531, 3, 642, 208, 265, 366, 172, 642, 663, 190, 642, 251, 500, 661, 642, 86, 190, 402, 531, 17, 580, 577, 145, 278, 642, 642, 249, 251, 36, 647, 207, 17, 644, 577, 265, 642, 207, 711, 208, 642, 17, 351, 366, 374, 62, 500, 374, 265, 34, 34, 207, 207, 615, 207, 492, 402, 642, 86, 642, 86, 190, 207, 642, 249, 361, 207, 249, 86, 642, 87, 3, 50, 374, 207, 577, 145, 47, 286, 3, 86, 539, 374, 190, 642, 730, 466]
+[Epoch 1] | Dataset: 0/2 | Batch 3/7
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/2 | Batch 0/7
+[Epoch 1] - [Batch 1/2200] Loss: 79.3385
+Target: tensor([157, 233,  36, 676,  30,   3,  23, 600, 729,   0,   0,   0,   0,   0])
+Raw Prediction: [540, 544, 426, 426, 444, 426, 143, 426, 289, 61, 544, 739, 426, 609, 98, 439, 426, 718, 239, 372, 267, 544, 718, 633, 426, 394, 443, 642, 622, 540, 111, 544, 426, 426, 89, 426, 60, 642, 302, 426, 394, 550, 426, 655, 544, 372, 302, 454, 439, 111, 61, 718, 583, 426, 372, 115, 460, 611, 136, 551, 293, 540, 344, 460, 426, 60, 716, 426, 40, 314, 718, 60, 642, 544, 111, 226, 385, 397, 267, 60, 739, 544, 243, 91, 256, 277, 385, 129, 226, 718, 460, 111, 544, 91, 293, 256, 426, 542, 466, 426]
+[Epoch 1] | Dataset: 0/2 | Batch 3/7
+[Epoch 1] - [Batch 4/2200] Loss: 43.5664
+Target: tensor([  9,  18,  20,  23, 672,  36,  26, 735, 200, 173,  22,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 0/2 | Batch 4/7
+[Epoch 1] - [Batch 5/2200] Loss: 38.0616
+Target: tensor([548, 490, 517, 371,  40,  15,  20,  70,   5, 157, 744, 216,   3,  10,
+        208])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 1/2 | Batch 0/15
+[Epoch 1] - [Batch 8/2200] Loss: 19.7447
+Target: tensor([  7, 123, 431,  32, 273,  63, 129, 743, 264, 604,  34,  74, 176,  48,
+        733, 739,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 1/2 | Batch 3/15
+[Epoch 1] - [Batch 11/2200] Loss: 13.0017
+Target: tensor([267, 176,   9,  84,  37,  65,  44, 730, 725,   0,   0,   0,   0,   0,
+          0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 1/2 | Batch 4/15
+[Epoch 1] - [Batch 12/2200] Loss: 11.9771
+Target: tensor([ 65,  44,   5, 624, 731,  62,  17,  79,   6, 163,   0,   0,   0,   0,
+          0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+Epoch 1/100 - Train Loss: 22.1739 - Val Loss: 7.5466
+[Epoch 2] | Dataset: 0/2 | Batch 0/7
+[Epoch 2] - [Batch 23/2200] Loss: 7.3569
+Target: tensor([165,  44, 149,  40, 745, 742, 729,   0,   0,   0,   0,   0,   0,   0,
+          0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 0/2 | Batch 3/7
+[Epoch 2] - [Batch 26/2200] Loss: 7.0374
+Target: tensor([  5,  34, 227, 133,   5,  34, 256, 745,   0,   0,   0,   0,   0,   0,
+          0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 0/2 | Batch 4/7
+[Epoch 2] - [Batch 27/2200] Loss: 7.1117
+Target: tensor([102,  85, 302,  39,   3,  95, 739,  54, 486,   0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 1/2 | Batch 0/15
+[Epoch 2] - [Batch 30/2200] Loss: 6.7560
+Target: tensor([177,  20, 398, 490,  15, 162,  40,  76, 542, 490, 341, 741, 331,   0,
+          0,   0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 1/2 | Batch 3/15
+[Epoch 2] - [Batch 33/2200] Loss: 6.6124
+Target: tensor([ 36, 178, 725, 152,  25, 688,  44, 614, 349, 328,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0,   0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 2] | Dataset: 1/2 | Batch 4/15
+[Epoch 2] - [Batch 34/2200] Loss: 6.7071
+Target: tensor([176, 724, 108,  36, 111,  44, 627,  56, 739,  54, 392,   0,   0,   0,
+          0,   0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/2 | Batch 0/7
+[Epoch 1] - [Batch 1/2200] Loss: 44.0959
+Target: tensor([ 50,  37,   8,   3, 168, 728,  40, 154,  11,  68,   0,   0,   0,   0,
+          0])
+Raw Prediction: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[Epoch 1] | Dataset: 0/2 | Batch 3/7
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/2 | Batch 0/7
+Using device: cpu
+Model Summary: SimpleCTCModel(
+  (initial_downsample): Sequential(
+    (0): Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+    (1): GELU(approximate='none')
+    (2): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  )
+  (layer1): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): ResidualBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+      (relu): ReLU(inplace=True)
+    )
+    (1): ResidualBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(8, None))
+    (1): MaxPool2d(kernel_size=(1, 2), stride=(1, 2), padding=0, dilation=1, ceil_mode=False)
+  )
+  (fc): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    (2): GELU(approximate='none')
+    (3): Dropout(p=0.3, inplace=False)
+    (4): Linear(in_features=512, out_features=750, bias=True)
+  )
+)
+[Epoch 1] | Dataset: 0/2 | Batch 0/7

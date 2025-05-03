@@ -11,16 +11,16 @@ torch.autograd.set_detect_anomaly(True)
 verbose = False
 
 class CNNLayerNorm(nn.Module):
-   def __init__(self, n_feats):
-        super(CNNLayerNorm, self).__init__()
-        self.layer_norm = nn.LayerNorm(n_feats)
-        nn.init.zeros_(self.layer_norm.bias)
-   def forward(self, x):
+    def __init__(self, n_feats):
+            super(CNNLayerNorm, self).__init__()
+            self.layer_norm = nn.LayerNorm(n_feats)
+            nn.init.zeros_(self.layer_norm.bias)
+    def forward(self, x):
        # x (batch, channel, feature, time)
-       x = x.transpose(2, 3).contiguous() # (batch, channel, time, feature)
-       if verbose:
-       x = self.layer_norm(x)
-       return x.transpose(2, 3).contiguous() # (batch, channel, feature, time) 
+        x = x.transpose(2, 3).contiguous() # (batch, channel, time, feature)
+        if verbose:
+            x = self.layer_norm(x)
+        return x.transpose(2, 3).contiguous() # (batch, channel, feature, time) 
    
 class ResidualCNN(nn.Module):
     def __init__(self, in_channels, out_channels, kernel, stride, dropout, n_feats):

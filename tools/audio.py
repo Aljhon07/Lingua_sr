@@ -170,7 +170,7 @@ def load_audio(idx, audio_path, info, sample_rate = 16000):
     # plot_spectrogram(spectrogram, normalized_spec, sample_rate=16000)
     return normalized_spec, padded_duration, save
 
-def pad_waveforms(waveforms, sr = 16000):
+def pad_waveform(waveforms, sr = 16000):
     pass
 
 def reconstruct_and_save(mel_spec, filename, sample_rate):

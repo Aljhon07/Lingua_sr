@@ -127,48 +127,38 @@ def load_audio(idx, audio_path, info, sample_rate = 16000):
         print(f"Resampling {audio_path} to {sample_rate} Hz...")
         resampler = T.Resample(orig_freq=info.sample_rate, new_freq=sample_rate)
         initial_waveform = resampler(initial_waveform)
+    # print(f"[Waveform] Min: {initial_waveform.min()} / Max: {initial_waveform.max()} / Mean: {initial_waveform.mean()} / Std: {initial_waveform.std()}")    
 
-    print(f"[Initial Waveform Stats] Min: {initial_waveform.min()} / Max: {initial_waveform.max()} / Mean: {initial_waveform.mean()} / Std: {initial_waveform.std()}")    
     initial_waveform = initial_waveform.contiguous()
     trimmed_waveform = double_vad(initial_waveform, sample_rate=sample_rate)
-    if trimmed_waveform.abs().max() < 1e-5:
-        trimmed_waveform = torch.randn_like(trimmed_waveform) * 0.01
+
+    if trimmed_waveform.numel() == 0 or trimmed_waveform.abs().max() < 1e-5:
+        return trimmed_waveform, 0, False
     
-    # Peak normalize after all processing
     peak =  trimmed_waveform.abs().max()
-    target_linear = 10 ** (-3.0 / 20.0)  # -3 dB
-    trimmed_waveform = trimmed_waveform * (target_linear / peak)
-    
-    print(f"[Normalize Volume] Min: {trimmed_waveform.min()} / Max: {trimmed_waveform.max()} / Mean: {trimmed_waveform.mean()} / Std: {trimmed_waveform.std()}")
-    zero_ratio = (trimmed_waveform.abs() < 1e-5).float().mean()
-    print(f"Zero ratio: {zero_ratio:.1%}")
-    # plt.hist(trimmed_waveform.numpy().flatten(), bins=100, range=(-1,1))
-    # plt.title("Waveform Value Distribution")
-    # plt.show()
+    trimmed_waveform /= peak
+    # print(f"[Normalize Volume] Min: {trimmed_waveform.min()} / Max: {trimmed_waveform.max()} / Mean: {trimmed_waveform.mean()} / Std: {trimmed_waveform.std()}")
+
     current_length = trimmed_waveform.size(1)
     trimmed_duration = current_length / sample_rate
     padded_duration, padding, save = get_padded_duration(trimmed_duration, current_length)
             
     waveform = torch.nn.functional.pad(trimmed_waveform, (0, padding), value=1e-6)
-    torchaudio.save("Vol_" + str(idx) + '.wav', waveform, sample_rate=sample_rate)
-    print(f"Audio Path: {audio_path} | Padded Duration: {padded_duration} | Original Length: {current_length} | Padded Length: {waveform.size(1)} | Orig (s): {info.num_frames / info.sample_rate} Trimmed (s): {trimmed_duration} Curr: {waveform.size(1) / sample_rate:.2f} seconds")
+    # torchaudio.save("Vol_" + str(idx) + '.wav', waveform, sample_rate=sample_rate)
+    # torchaudio.save("orig_" + str(idx) + '.wav', initial_waveform, 16000)
+    # print(f"Audio Path: {audio_path} | Padded Duration: {padded_duration} | Original Length: {current_length} | Padded Length: {waveform.size(1)} | Orig (s): {info.num_frames / info.sample_rate} Trimmed (s): {trimmed_duration} Curr: {waveform.size(1) / sample_rate:.2f} seconds")
 
-    initial_spectrogram = mel_spectrogram(waveform).contiguous()
-    print(f"[Initial Spectrogram Stats] Shape: {initial_spectrogram.shape} / Min: {initial_spectrogram.min()} / Max: {initial_spectrogram.max()} / Mean: {initial_spectrogram.mean()} / Std: {initial_spectrogram.std()}")
+    spec = mel_spectrogram(waveform).contiguous()
+    # print(f"[Initial Spectrogram Stats] Shape: {spec.shape} / Min: {spec.min()} / Max: {spec.max()} / Mean: {spec.mean()} / Std: {spec.std()}")
 
-    # initial_spectrogram = torch.clamp(initial_spectrogram, min=1e-8, max=1.0) 
-    # print(f"[Clamp Spectrogram] Min: {initial_spectrogram.min()} / Max: {initial_spectrogram.max()} / Mean: {initial_spectrogram.mean()} / Std: {initial_spectrogram.std()}")
-    
-    spectrogram = amplitude(initial_spectrogram)
-    print(f"[Ampltude to DB] Min: {spectrogram.min()} / Max: {spectrogram.max()} / Mean: {spectrogram.mean()} / Std: {spectrogram.std()}")
-   
-    normalized_spec = min_max_normalize(spectrogram)
-    print(f"Normalized Spectrogram: {normalized_spec.shape} / Min: {normalized_spec.min()} / Max: {normalized_spec.max()} / Mean: {normalized_spec.mean()} / Std: {normalized_spec.std()}")
-    
-    torchaudio.save("orig_" + str(idx) + '.wav', initial_waveform, 16000)
-    reconstruct_and_save(initial_spectrogram, "reconstructed_mel.wav", 16000)
-    # plot_spectrogram(spectrogram, normalized_spec, sample_rate=16000)
-    return normalized_spec, padded_duration, save
+    log_spec = amplitude(spec)
+    # print(f"[Ampltude to DB] Min: {log_spec.min()} / Max: {log_spec.max()} / Mean: {log_spec.mean()} / Std: {log_spec.std()}")
+
+    # plot_waveforms(waveform, trimmed_waveform)
+    # plot_spectrogram(spec, log_spec, sample_rate=16000)
+    print(f"Processing Audio {idx}", end='\r')
+
+    return log_spec, padded_duration, save
 
 def pad_waveform(waveforms, sr = 16000):
     pass

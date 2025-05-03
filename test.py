@@ -53,10 +53,9 @@ class SimpleCTCModel(nn.Module):
             nn.BatchNorm2d(32)
         )
         
-        
         self.layer1 = self._make_layer(32, 64, blocks=2)        
         self.layer2 = self._make_layer(64, 128, blocks=2)
-        # self.layer3 = self._make_layer(128, 256, blocks=2)
+        self.layer3 = self._make_layer(128, 256, blocks=2)
         
         self.pool = nn.Sequential(
             nn.AdaptiveAvgPool2d((8, None)),
@@ -71,9 +70,9 @@ class SimpleCTCModel(nn.Module):
             nn.Linear(512, vocab_size)
         )
  
-        nn.init.xavier_uniform_(self.fc[-1].weight, gain=0.01)  # Tiny initial weights
-        nn.init.constant_(self.fc[-1].bias, -3.0)  # Strong blank suppression
-        self.fc[-1].bias.data[0] = 0.0
+        # nn.init.xavier_uniform_(self.fc[-1].weight, gain=0.01)  # Tiny initial weights
+        # nn.init.constant_(self.fc[-1].bias, -3.0)  # Strong blank suppression
+        # self.fc[-1].bias.data[0] = 0.0
     def _make_layer(self, in_channels, out_channels, blocks):
         layers = []
         for _ in range(blocks):
@@ -87,6 +86,7 @@ class SimpleCTCModel(nn.Module):
         x = self.initial_downsample(x)
         if verbose:
             print(f"After downsample: {x.shape}")
+            print(f"[Layer Norm Stats] Min: {x.max()}  | Min: {x.min()}")
         x = self.layer1(x)
         if verbose:
             print(f"After layer1: {x.shape}")
@@ -110,7 +110,7 @@ class SimpleCTCModel(nn.Module):
     
 # ======= Training Pipeline =======
 def train():
-    model = SimpleCTCModel(750).to(device)
+    model = SimpleCTCModel(1000).to(device)
     total_epochs = 100
     log_file = os.path.join(config.LOG_DIR, f"test_{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
@@ -169,7 +169,7 @@ def train():
                         
                     optimizer.zero_grad()
                     outputs = model(spec).contiguous()
-                    print(f"Output: ", outputs.shape)
+                    print(f"Output: { outputs.shape} | Min/Max: {outputs.min()}/{outputs.max()}",)
                     output = torch.nn.functional.log_softmax(outputs, dim=-1)
                     
                     softmax_output = output[:, 0, :]
@@ -196,7 +196,6 @@ def train():
                     optimizer.step()
                     
                     pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
-                    sample_pred = pred_raw[1]
                     print(f"="*75)
                     print(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}")
                     print(f"\n[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}")
@@ -204,15 +203,15 @@ def train():
                     if (batch_idx + 1) & 10 == 0:
                         f.write(f"[Epoch {epoch + 1}] - [Batch {batch_counter}/{num_batches_per_epoch * total_epochs}] Loss: {loss.item():.4f}\n")
                         f.write(f"Target: {targets[1]}\nRaw Prediction: {pred_raw[1].tolist()}\n")
+
                     if(loss.item() < 0.5):
-                        torch.save(model.state_dict(), "model.pth")
+                        torch.save(model.state_dict(), "target_reached_model.pth")
                         print("Loss is too low, stopping training.")
                         f.write(f"="*50)
                         f.write("Loss is too low, stopping training.\n")
                         f.write(f"="*50)
                         break
-                    print(f"*"*75)
-                    
+
                     if batch_counter == 1 or batch_counter == 20 or (batch_counter % 50 == 0 and batch_counter < 350):
                         save_checkpoint(model, optimizer, epoch + 1, loss.item(), filename=f"checkpoint_batch_{batch_counter}.pth")
                         print(f"Checkpoint saved at epoch {epoch}")
@@ -234,7 +233,12 @@ def train():
 
                 with torch.no_grad():
                     for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
-                        outputs = model(spec)
+                        spec = spec.to(device)
+                        targets = targets.to(device)
+                        spec_len = spec_len.to(device)
+                        target_len = target_len.to(device)
+
+                        outputs = model(spec).to(device)
                         input = torch.nn.functional.log_softmax(outputs, dim=-1)
                         
                         loss = criterion(input, targets, spec_len // 2, target_len)
@@ -284,7 +288,6 @@ def load_checkpoint(model, optimizer, filename="checkpoint.pth"):
     return start_epoch, loss
 
 if __name__ == "__main__":
-    # test()
     train()
     
     

@@ -2,7 +2,7 @@ import os
 import sentencepiece as spm
 import config
 
-def train(model_type='bpe', vocab_size=750,model_prefix = config.LANGUAGE,):
+def train(model_type='bpe', vocab_size=1000,model_prefix = config.LANGUAGE,):
     input_file = os.path.join(config.OUTPUT_PATH, config.LANGUAGE+"_sentences.txt")
     print(f"Training SentencePiece model with input file: {input_file}")
     model_path = os.path.join(config.OUTPUT_PATH, model_prefix)

@@ -5,6 +5,7 @@ from src import SimpleModel as model
 import pandas as pd
 import config
 import test
+import torch
 
 if __name__ == '__main__':
     language = config.LANGUAGE
@@ -16,8 +17,8 @@ if __name__ == '__main__':
     # if os.path.exists(common_voice_path):
     #     te.process_and_encode_common_voice(common_voice_path, tsv_files, output_path)
 
-    # recheck = True
-    # if os.path.exists(wavs_path) and recheck:
+    # recheck = False
+    # if not os.path.exists(wavs_path) or recheck:
     #     print("Converting audio files to WAV format...")
     #     os.makedirs(wavs_path, exist_ok=True)
     #     print(f"Directory {wavs_path} created.")
@@ -28,19 +29,13 @@ if __name__ == '__main__':
     # else:
     #     print(f"Directory {wavs_path} already exists. Skipping.")
 
-    if os.path.exists(f"{output_path}/{language}.tsv"):
-        print(f"Classifying file {output_path}/{language}.tsv.")
-        audio.classify_batch(f"{output_path}/{language}.tsv", wavs_path)
-    else:  
-        raise(f"TSV file {output_path}/{language}.tsv does not exist. Please run the TSV extraction first.")
+    # if os.path.exists(f"{output_path}/{language}.tsv"):
+    #     print(f"Classifying file {output_path}/{language}.tsv.")
+    #     audio.classify_batch(f"{output_path}/{language}.tsv", wavs_path)
+    # else:  
+    #     raise(f"TSV file {output_path}/{language}.tsv does not exist. Please run the TSV extraction first.")
 
 
     # model.train()
     # test.train()
-    
-  
-
-
-
-    
-
+    # print(torch.cuda.is_available())    

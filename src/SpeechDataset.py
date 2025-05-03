@@ -38,7 +38,6 @@ class SpeechDataset(Dataset):
 
         # audio_tools.plot_spectrogram(spectrogram, spectrogram)
         # print(f"Loading spectrogram from {spec_path}")
-        # print(f"Spectrogram Stats: {spectrogram.shape} | Min: {spectrogram.min()} | Max: {spectrogram.max()} | Mean: {spectrogram.mean()} | Std: {spectrogram.std()} | Contiguous: {spectrogram.is_contiguous()}")
         # print(f"Audio: {audio_path} | Transcription: {transcription} | Tokenized: {tokenized_transcript}")
         return spectrogram, torch.tensor(label, dtype=torch.long), features_len, label_len, metadata['transcription'], audio_path
 
@@ -85,9 +84,9 @@ def load_data():
         train_loaders.append(DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn))
         val_loaders.append(DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn))
 
-    loaders = {'train': train_loaders, 'val': val_loaders}
+    loaders = {'train': [train_loaders[2]], 'val': [val_loaders[2]]}
 
-    for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[0]):
+    for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[2]):
         print(f"Features batch shape: {feature.shape}")
         print(f"Labels batch shape: {label.shape}")
         print(f"Feature lengths: {feature_len}")
@@ -97,7 +96,6 @@ def load_data():
         break
         
     return loaders
-    return train_loader, val_loader
 
 def load_data_from_tsv(tsv_file):
     if not os.path.exists(tsv_file):

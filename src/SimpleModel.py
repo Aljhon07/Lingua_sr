@@ -1,12 +1,9 @@
 import torch
 import torch.nn as nn
 import src.SpeechDataset as sd
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
 import config
 import os
-from torchviz import make_dot
-from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
 torch.autograd.set_detect_anomaly(True)
@@ -42,6 +39,7 @@ class ResidualCNN(nn.Module):
         x = self.layer_norm(x)
         if verbose:
             print(f"Layer Norm Output Shape: {x.shape} / Stride: {x.stride()} / Contiguous: {x.is_contiguous()}")
+      
         x = F.gelu(x)   
         x = self.dropout(x)
         x = self.cnn1(x)

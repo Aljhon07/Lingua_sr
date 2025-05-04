@@ -62,7 +62,7 @@ def load_data():
     datasets = []
 # Iterate over the sorted keys and print the number of samples for each key
     for idx, (key) in enumerate(sorted_keys):
-        if idx < 2 or len(categorized_data[key]) < 200:
+        if idx < 5 or len(categorized_data[key]) < 200:
             continue
         print(f"Key: {key} | Number of samples: {len(categorized_data[key])}")
         datasets.append(SpeechDataset(categorized_data[key]))
@@ -84,16 +84,16 @@ def load_data():
         train_loaders.append(DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn))
         val_loaders.append(DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn))
 
-    loaders = {'train': [train_loaders[2]], 'val': [val_loaders[2]]}
+    loaders = {'train': train_loaders, 'val': val_loaders}
 
-    for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[2]):
-        print(f"Features batch shape: {feature.shape}")
-        print(f"Labels batch shape: {label.shape}")
-        print(f"Feature lengths: {feature_len}")
-        print(f"Label lengths: {label_len}")
-        for j in range(len(string_labels)):
-            print(f"Audio: {audio_paths[j]} | String label: {string_labels[j]}")            
-        break
+    # for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[2]):
+    #     print(f"Features batch shape: {feature.shape}")
+    #     print(f"Labels batch shape: {label.shape}")
+    #     print(f"Feature lengths: {feature_len}")
+    #     print(f"Label lengths: {label_len}")
+    #     for j in range(len(string_labels)):
+    #         print(f"Audio: {audio_paths[j]} | String label: {string_labels[j]}")            
+    #     break
         
     return loaders
 

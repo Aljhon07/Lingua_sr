@@ -6,121 +6,25 @@ import src.SpeechDataset as sd
 from torch.utils.data import Dataset, DataLoader
 import os
 import config
+import tools.audio as audio
+from src.SpeechRecognitionModel import SpeechRecognitionModel
 
-verbose = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")
 print(f"Using device: {device}")
 
-class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-        super(ResidualBlock, self).__init__()
-        
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=kernel_size//2, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-            
-        self.downsample = None
-        if in_channels != out_channels or stride != 1:
-            self.downsample = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(out_channels)
-            )
-            
-        self.relu = nn.ReLU(inplace=True)
-    def forward(self, x):
-        identity = x
-        
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        
-        if self.downsample is not None:
-            identity = self.downsample(identity)
-        x += identity 
-        
-        return self.relu(x)
-
-# ======= Model =======
-class SimpleCTCModel(nn.Module):
-    def __init__(self, vocab_size):
-        super().__init__()
-        self.initial_downsample = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(1, 1), padding=5//2),
-            nn.GELU(),
-            nn.BatchNorm2d(32)
-        )
-        
-        self.layer1 = self._make_layer(32, 64, blocks=2)        
-        self.layer2 = self._make_layer(64, 128, blocks=2)
-        self.layer3 = self._make_layer(128, 256, blocks=2)
-        
-        self.pool = nn.Sequential(
-            nn.AdaptiveAvgPool2d((8, None)),
-            nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))
-        )     
-        
-        self.fc = nn.Sequential(
-            nn.Linear(128 * 8, 512),
-            nn.LayerNorm(512),
-            nn.GELU(),
-            nn.Dropout(0.3),
-            nn.Linear(512, vocab_size)
-        )
- 
-        # nn.init.xavier_uniform_(self.fc[-1].weight, gain=0.01)  # Tiny initial weights
-        # nn.init.constant_(self.fc[-1].bias, -3.0)  # Strong blank suppression
-        # self.fc[-1].bias.data[0] = 0.0
-    def _make_layer(self, in_channels, out_channels, blocks):
-        layers = []
-        for _ in range(blocks):
-            layers.append(ResidualBlock(in_channels, out_channels))
-            in_channels = out_channels
-        return nn.Sequential(*layers)
-    
-    def forward(self, x):
-        if verbose:
-            print(f"Input Shape: {x.shape}")
-        x = self.initial_downsample(x)
-        if verbose:
-            print(f"After downsample: {x.shape}")
-            print(f"[Layer Norm Stats] Min: {x.max()}  | Min: {x.min()}")
-        x = self.layer1(x)
-        if verbose:
-            print(f"After layer1: {x.shape}")
-        x = self.layer2(x)
-        if verbose:
-            print(f"After layer2: {x.shape}")
-        # x = self.layer3(x)
-        # if verbose:
-        #     print(f"After layer3: {x.shape}")
-        x = self.pool(x)
-        if verbose:
-            print(f"After pooling: {x.shape}")
-        x = x.view(x.size(0), x.size(3), -1 ).contiguous()  
-        if verbose:
-            print(f"After view: {x.shape}")
-        x = self.fc(x)
-        if verbose:
-            print(f"After fc: {x.shape}")
-
-        return x.transpose(0, 1).contiguous() 
-    
-# ======= Training Pipeline =======
 def train():
-    model = SimpleCTCModel(1000).to(device)
+    model = SpeechRecognitionModel(1000).to(device)
+
     total_epochs = 100
     log_file = os.path.join(config.LOG_DIR, f"test_{config.LANGUAGE}.log")
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) # blank is the last index.
-    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0005)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3, patience=3, threshold=0.005)
     batch_counter = 0
     loaders = sd.load_data()
     epoch_losses = []
     val_losses = []
-    
     # Group parameters by type
     downsample_params = [p for n,p in model.named_parameters()
                 if 'initial_downsample' in n and 'weight' in n]
@@ -140,28 +44,44 @@ def train():
             epoch_batch_counter = 0
             epoch_loss = 0.0
 
-            if epoch < 25:
+            if epoch == 0:
                 current_train_loaders = loaders['train'][:2]
                 current_val_loaders = loaders['val'][:2]  # Use only first 2 datasets
-            elif 25 <= epoch < 50:
-                current_train_loaders = loaders['train'][:5] 
-                current_val_loaders = loaders['val'][:5]  # Use first 5 datasets
+            elif epoch >= 1:
+                current_train_loaders = loaders['train'][:4] 
+                current_val_loaders = loaders['val'][:4]  # Use first 5 datasets
+            elif epoch > 10 and epoch < 15:
+                current_train_loaders = loaders['train'][:6]
+                current_val_loaders = loaders['val'][:6]
             else:
                 current_train_loaders = loaders['train']
                 current_val_loaders = loaders['val']
             
             num_batches_per_epoch = sum(len(loader) for loader in current_train_loaders)
             
+            torch.cuda.empty_cache() 
             for idx, (loader) in enumerate(current_train_loaders):
-                for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
+                for batch_idx, (spec, targets, spec_len, target_len, string_labels, audio_paths) in enumerate(loader):
+
+                    if batch_idx == 0:
+                        print("🧠 Sanity Check: Audio-Label Alignment — Batch 0 -----------")
+                        print(f"Spectrogram shape: {spec.shape}")
+                        print(f"Spectrogram length (frames): {spec_len[2].item()}")
+                        print(f"Target label length: {target_len[2].item()}")
+                        print(f"Audio path: {audio_paths[2]}")
+                        print(f"📝 String label (transcription):\n{string_labels[2]}")
+                        print(f"Target: {targets[2]}")
+
+                        audio.plot_spectrogram(spec[2], spec[2])
+                    
+
                     model.train()
                     batch_counter += 1
                     epoch_batch_counter += 1
                     
                     spec = spec.to(device)  
                     targets = targets.to(device) 
-                    spec_len = spec_len.to(device) 
-                    target_len = target_len.to(device)
+
                     print(f"*"*75)
                     print(f"[Epoch {epoch + 1}] | Dataset: {idx}/{len(current_train_loaders)} | Batch {batch_idx}/{len(loader)}")
                     if (batch_idx + 1) & 10 == 0:
@@ -190,9 +110,11 @@ def train():
                     torch.nn.utils.clip_grad_norm_(conv_params, max_norm=0.5)  # Tighten conv weights
                     torch.nn.utils.clip_grad_norm_(fc_params, max_norm=0.3)      # FC layers
                     epoch_loss += loss.item()
+                    
+                    print(scheduler.get_last_lr())
                     for name, param in model.named_parameters():
                         if param.grad is not None:
-                            print(f"Gradient for {name}: {param.grad.norm():.4f}")
+                            print(f"{name}: {param.grad.norm():.4f}")
                     optimizer.step()
                     
                     pred_raw = torch.argmax(outputs, dim=2).transpose(0, 1).contiguous()  # (B, T)
@@ -235,8 +157,6 @@ def train():
                     for batch_idx, (spec, targets, spec_len, target_len, _, _) in enumerate(loader):
                         spec = spec.to(device)
                         targets = targets.to(device)
-                        spec_len = spec_len.to(device)
-                        target_len = target_len.to(device)
 
                         outputs = model(spec).to(device)
                         input = torch.nn.functional.log_softmax(outputs, dim=-1)

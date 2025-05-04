@@ -110,17 +110,7 @@ def classify_batch(tsv_file, wavs_path):
     print(f"Classified audio files and saved results to {tsv_file}")
 
 def load_audio(idx, audio_path, info, sample_rate = 16000):
-    mel_spectrogram = T.MelSpectrogram(
-            sample_rate=16000,
-            n_mels=80,
-            n_fft=400,
-            win_length=400,
-            hop_length=160,
-            power=1.0
-        )
-        
-    amplitude = T.AmplitudeToDB(stype='power', top_db=None)
-    padded_duration = 3
+
     initial_waveform, sample_rate = torchaudio.load(audio_path)
     # print(f"Loaded {audio_path}. Shape: {initial_waveform.shape} / Sample Rate: {sample_rate} / Duration: {info.num_frames / info.sample_rate} seconds")
     if info.sample_rate != sample_rate:
@@ -132,36 +122,51 @@ def load_audio(idx, audio_path, info, sample_rate = 16000):
     initial_waveform = initial_waveform.contiguous()
     trimmed_waveform = double_vad(initial_waveform, sample_rate=sample_rate)
 
-    if trimmed_waveform.numel() == 0 or trimmed_waveform.abs().max() < 1e-5:
+    rms = trimmed_waveform.pow(2).mean().sqrt()
+    gain = 0.1 / rms
+    if trimmed_waveform.numel() == 0 or rms < 1e-5:
         return trimmed_waveform, 0, False
     
-    peak =  trimmed_waveform.abs().max()
-    trimmed_waveform /= peak
-    # print(f"[Normalize Volume] Min: {trimmed_waveform.min()} / Max: {trimmed_waveform.max()} / Mean: {trimmed_waveform.mean()} / Std: {trimmed_waveform.std()}")
+    rms_normalized = trimmed_waveform * gain
 
-    current_length = trimmed_waveform.size(1)
-    trimmed_duration = current_length / sample_rate
-    padded_duration, padding, save = get_padded_duration(trimmed_duration, current_length)
-            
-    waveform = torch.nn.functional.pad(trimmed_waveform, (0, padding), value=1e-6)
-    # torchaudio.save("Vol_" + str(idx) + '.wav', waveform, sample_rate=sample_rate)
-    # torchaudio.save("orig_" + str(idx) + '.wav', initial_waveform, 16000)
-    # print(f"Audio Path: {audio_path} | Padded Duration: {padded_duration} | Original Length: {current_length} | Padded Length: {waveform.size(1)} | Orig (s): {info.num_frames / info.sample_rate} Trimmed (s): {trimmed_duration} Curr: {waveform.size(1) / sample_rate:.2f} seconds")
+    # torchaudio.save("RMS_" + str(idx) + '.wav', rms_normalized, 16000)
+
+    rms_waveform, rms_metadata = pad_waveform(rms_normalized)
+    padded_duration, save, orig_length, trimmed_duration = rms_metadata
+    # print(f"Audio Path: {audio_path} | Padded Duration: {padded_duration} | Original Length: {orig_length} | Padded Length: {rms_waveform.size(1)} | Orig (s): {info.num_frames / info.sample_rate} Trimmed (s): {trimmed_duration} Curr: {rms_waveform.size(1) / sample_rate:.2f} seconds")
+
+    rms_spec = extract_spectrogram(rms_waveform)
+    rms_normalized = min_max_normalize(rms_spec)
+    
+    spec = rms_normalized
+    print(f"{idx}", end="\r")
+    return spec, padded_duration, save
+
+def extract_spectrogram(waveform):
+    mel_spectrogram = T.MelSpectrogram(
+        sample_rate=16000,
+        n_mels=80,
+        n_fft=400,
+        win_length=400,
+        hop_length=160,
+        power=1.0
+    )
+    amplitude = T.AmplitudeToDB(stype='power', top_db=80)
 
     spec = mel_spectrogram(waveform).contiguous()
     # print(f"[Initial Spectrogram Stats] Shape: {spec.shape} / Min: {spec.min()} / Max: {spec.max()} / Mean: {spec.mean()} / Std: {spec.std()}")
+    spec = amplitude(spec)
+    # print(f"[Ampltude to DB] Min: {spec.min()} / Max: {spec.max()} / Mean: {spec.mean()} / Std: {spec.std()}")
+    
+    return  spec
 
-    log_spec = amplitude(spec)
-    # print(f"[Ampltude to DB] Min: {log_spec.min()} / Max: {log_spec.max()} / Mean: {log_spec.mean()} / Std: {log_spec.std()}")
-
-    # plot_waveforms(waveform, trimmed_waveform)
-    # plot_spectrogram(spec, log_spec, sample_rate=16000)
-    print(f"Processing Audio {idx}", end='\r')
-
-    return log_spec, padded_duration, save
-
-def pad_waveform(waveforms, sr = 16000):
-    pass
+def pad_waveform(waveform, sr = 16000):
+    current_length = waveform.size(1)
+    trimmed_duration = current_length / sr
+    padded_duration, padding, save = get_padded_duration(trimmed_duration, current_length)
+            
+    waveform = torch.nn.functional.pad(waveform, (0, padding), value=1e-6)
+    return waveform, ( padded_duration,  save,  current_length, trimmed_duration)
 
 def reconstruct_and_save(mel_spec, filename, sample_rate):
     """Reconstruct audio from MEL spectrogram"""
@@ -193,9 +198,14 @@ def reconstruct_and_save(mel_spec, filename, sample_rate):
         print(f"Reconstruction failed: {str(e)}")
         raise
     
+
+def mean_normalization(spectrogram):
+    spectrogram = (spectrogram - spectrogram.mean()) / (spectrogram.std() + 1e-6)
+    return spectrogram
+
 def min_max_normalize(spectrogram):
-    spectrogram_min = spectrogram.min(dim=2, keepdim=True)[0]
-    spectrogram_max = spectrogram.max(dim=2, keepdim=True)[0]
+    spectrogram_min = spectrogram.min()
+    spectrogram_max = spectrogram.max()
     normalized_spec = (spectrogram - spectrogram_min) / (spectrogram_max - spectrogram_min + 1e-6)
     return normalized_spec
 
@@ -250,6 +260,8 @@ def get_padded_duration(trimmed_duration, current_length):
 def plot_waveforms(waveform, trimmed):
     plt.figure(figsize=(12, 4))
 
+    waveform = waveform[0, :1000]
+    trimmed = trimmed[0, :1000]
     plt.subplot(1, 2, 1)
     plt.plot(waveform.squeeze().numpy())
     plt.title(f"Waveform 1 - {len(waveform.squeeze())/16000:.2f}s")
@@ -273,14 +285,14 @@ def plot_spectrogram(orig, normalized, sample_rate=16000):
     normalized = normalized.squeeze(0).cpu().numpy()
     
     # Plot the raw (unnormalized) spectrogram
-    im0 = axs[0, 0].imshow(orig, aspect='auto', origin='lower', cmap='viridis')
+    im0 = axs[0, 0].imshow(orig, aspect='auto', origin='lower', cmap='inferno')
     axs[0, 0].set_title('Raw Mel Spectrogram')
     axs[0, 0].set_xlabel('Time Frames')
     axs[0, 0].set_ylabel('Mel Bands')
     fig.colorbar(im0, ax=axs[0, 0], format="%+2.0f dB")
 
     # Plot the normalized spectrogram
-    im1 = axs[0, 1].imshow(normalized, aspect='auto', origin='lower', cmap='viridis')
+    im1 = axs[0, 1].imshow(normalized, aspect='auto', origin='lower', cmap='inferno')
     axs[0, 1].set_title('Normalized Mel Spectrogram')
     axs[0, 1].set_xlabel('Time Frames')
     axs[0, 1].set_ylabel('Mel Bands')

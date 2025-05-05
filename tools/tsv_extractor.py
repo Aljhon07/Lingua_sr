@@ -6,7 +6,7 @@ import config
 import re
 
 def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
-    remove_chars = r"[?!’–—‘\-\.,:;()“”\"]"
+    remove_chars = r"[?!’–—‘\-\.:;()“”\"]"
     output_path = os.path.join(output_path, config.LANGUAGE)
     file_names = []
     transcriptions = []

@@ -2,24 +2,18 @@ import torch
 import torchaudio
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, random_split
-import torchaudio.functional as F
-import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 import os
-import librosa
 import config
-from collections import Counter
-from tools import audio as audio_tools
-
+from tools import utils
 class SpeechDataset(Dataset):
-    def __init__(self, data, sample_rate=16000):
+    def __init__(self, data, sample_rate=16000, apply_mask = False):
         self.tsv_file = os.path.join(config.OUTPUT_PATH, f"{config.LANGUAGE}.tsv")
         self.sample_rate = sample_rate
         self.data = data
         self.freq_mask = torchaudio.transforms.FrequencyMasking(freq_mask_param=10)
         self.time_mask = torchaudio.transforms.TimeMasking(time_mask_param=25)
-        
+        self.apply_mask = apply_mask
     def __len__(self):
         return len(self.data)
     
@@ -34,9 +28,13 @@ class SpeechDataset(Dataset):
         features_len = spectrogram.shape[2]  # Time dimension
         label_len = len(label)
         
+        if self.apply_mask:
+            spectrogram = self.freq_mask(spectrogram)
+            spectrogram = self.time_mask(spectrogram)
+            
         transcription = metadata['transcription']
 
-        # audio_tools.plot_spectrogram(spectrogram, spectrogram)
+        # utils.plot_spectrogram(spectrogram, spectrogram)
         # print(f"Loading spectrogram from {spec_path}")
         # print(f"Audio: {audio_path} | Transcription: {transcription} | Tokenized: {tokenized_transcript}")
         return spectrogram, torch.tensor(label, dtype=torch.long), features_len, label_len, metadata['transcription'], audio_path
@@ -59,40 +57,56 @@ def collate_fn(batch):
 def load_data():
     categorized_data = load_data_from_tsv(os.path.join(config.OUTPUT_PATH, f"{config.LANGUAGE}.tsv"))
     sorted_keys = sorted(categorized_data.keys())
-    datasets = []
-# Iterate over the sorted keys and print the number of samples for each key
-    for idx, (key) in enumerate(sorted_keys):
-        if idx < 5 or len(categorized_data[key]) < 200:
-            continue
-        print(f"Key: {key} | Number of samples: {len(categorized_data[key])}")
-        datasets.append(SpeechDataset(categorized_data[key]))
-        
-        
-    total_duration = 0
-    for dataset in datasets:
-        print(f"Dataset Size: {len(dataset)} samples | Duration: {dataset.get_total_durations() / 60 / 60:.2f} hours")
-        total_duration = dataset.get_total_durations()
-    print(f"Total Duration: {total_duration / 60 / 60:.2f} hours")
-
     train_loaders, val_loaders = [], []
-    
-    for dataset in datasets:
-        train_size = int(0.9 * len(dataset))
-        val_size = len(dataset) - train_size
-        train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+    total_duration = 0
+
+    for idx, (key) in enumerate(sorted_keys):
+        if len(categorized_data[key]) < 200:
+            continue
+        data_samples = categorized_data[key]
+        split_idx = int(0.9 * len(data_samples))
         
+        # 2. Create separate train/val data lists
+        train_samples = data_samples[:split_idx]
+        val_samples = data_samples[split_idx:]
+        # 3. Create datasets with proper masking settings
+        train_dataset = SpeechDataset(train_samples, apply_mask=True)  # Only train gets masked
+        val_dataset = SpeechDataset(val_samples, apply_mask=False)    # Val stays clean
+        # 4. Create DataLoaders
         train_loaders.append(DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn))
         val_loaders.append(DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn))
 
-    loaders = {'train': train_loaders, 'val': val_loaders}
+        ds_duration = train_dataset.get_total_durations() + val_dataset.get_total_durations()
+        total_duration += ds_duration
+        print(f"Key: {key} | Dataset Size: {len(train_dataset) + len(val_dataset)} samples | Duration: {ds_duration / 60 / 60:.2f} hours")
+        
+    print(f"Total Duration: {total_duration / 60 / 60:.2f} hours")
 
-    # for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[2]):
+    full_overfit_samples = categorized_data[3.0][:500]
+
+    overfit_train_samples = full_overfit_samples[:450]  # First 32 for training
+    overfit_val_samples = full_overfit_samples[450:]    # Last 10 for validation
+
+    # Create datasets
+    overfit_dataset = SpeechDataset(overfit_train_samples, apply_mask=True)
+    overfit_val_dataset = SpeechDataset(overfit_val_samples)
+
+    # Create loaders
+    overfit_loader = DataLoader(overfit_dataset, batch_size=25, shuffle=True, collate_fn=collate_fn)
+    overfit_val_loader = DataLoader(overfit_val_dataset, batch_size=25, shuffle=False, collate_fn=collate_fn)
+    
+    # loaders = {'train': train_loaders[:5], 'val': val_loaders[:5]}
+
+    # loaders = {'train': [train_loaders[3]], 'val': [val_loaders[3]]}
+
+
+    loaders = {"train" : [overfit_loader], "val": [overfit_val_loader]}
+
+    # for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[3]):
     #     print(f"Features batch shape: {feature.shape}")
     #     print(f"Labels batch shape: {label.shape}")
     #     print(f"Feature lengths: {feature_len}")
     #     print(f"Label lengths: {label_len}")
-    #     for j in range(len(string_labels)):
-    #         print(f"Audio: {audio_paths[j]} | String label: {string_labels[j]}")            
     #     break
         
     return loaders

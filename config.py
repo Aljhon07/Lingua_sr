@@ -3,3 +3,16 @@ COMMON_VOICE_PATH = f"./commonvoice/{LANGUAGE}"
 OUTPUT_PATH = f"./output/{LANGUAGE}"
 WAVS_PATH = COMMON_VOICE_PATH + "/wavs"
 LOG_DIR = "./logs"
+
+TRAIN_LR = 0.001
+TOTAL_EPOCH = 100
+VOCAB_SIZE = 1000
+
+H_PARAMS = {
+    "BASE_LR": 0.001,
+    "TOTAL_EPOCH": 100,
+    "VOCAB_SIZE": 30,
+    "N_FEATS": 80,
+    "VERBOSE": False
+}
+

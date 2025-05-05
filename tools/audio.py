@@ -4,14 +4,9 @@ import pandas as pd
 import torch
 import torchaudio
 import torchaudio.transforms as T
-import torchaudio.functional as F
 import config
-import matplotlib.pyplot as plt
-import numpy as np
 import time
-import librosa
-import soundfile as sf
-
+from tools.utils import min_max_normalize, double_vad, pad_waveform, plot_waveforms, plot_spectrogram, extract_spectrogram 
 def to_wav(input_file, output_file):
     try:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -109,7 +104,10 @@ def classify_batch(tsv_file, wavs_path):
     df.to_csv(tsv_file, sep='\t', index=False)
     print(f"Classified audio files and saved results to {tsv_file}")
 
-def load_audio(idx, audio_path, info, sample_rate = 16000):
+def load_audio(idx = 0, audio_path = None, info = None, sample_rate = 16000):
+
+    if info is None:
+        info = torchaudio.info(audio_path)
 
     initial_waveform, sample_rate = torchaudio.load(audio_path)
     # print(f"Loaded {audio_path}. Shape: {initial_waveform.shape} / Sample Rate: {sample_rate} / Duration: {info.num_frames / info.sample_rate} seconds")
@@ -128,7 +126,7 @@ def load_audio(idx, audio_path, info, sample_rate = 16000):
         return trimmed_waveform, 0, False
     
     rms_normalized = trimmed_waveform * gain
-
+    # print(f"[RMS Nrm]: {rms_normalized.pow(2).mean().sqrt()} | Min: {rms_normalized.min()} | Max: {rms_normalized.max()}")
     # torchaudio.save("RMS_" + str(idx) + '.wav', rms_normalized, 16000)
 
     rms_waveform, rms_metadata = pad_waveform(rms_normalized)
@@ -136,180 +134,12 @@ def load_audio(idx, audio_path, info, sample_rate = 16000):
     # print(f"Audio Path: {audio_path} | Padded Duration: {padded_duration} | Original Length: {orig_length} | Padded Length: {rms_waveform.size(1)} | Orig (s): {info.num_frames / info.sample_rate} Trimmed (s): {trimmed_duration} Curr: {rms_waveform.size(1) / sample_rate:.2f} seconds")
 
     rms_spec = extract_spectrogram(rms_waveform)
+    # print(f"[RMS Spec]: {rms_normalized.pow(2).mean().sqrt()} | Min: {rms_normalized.min()} | Max: {rms_normalized.max()}")
     rms_normalized = min_max_normalize(rms_spec)
-    
+    # print(f"[RMS Norm]: {rms_normalized.pow(2).mean().sqrt()} | Min: {rms_normalized.min()} | Max: {rms_normalized.max()}")
+    # plot_waveforms( trimmed_waveform, rms_waveform)
+    # plot_spectrogram(rms_spec, rms_normalized)
     spec = rms_normalized
     print(f"{idx}", end="\r")
     return spec, padded_duration, save
 
-def extract_spectrogram(waveform):
-    mel_spectrogram = T.MelSpectrogram(
-        sample_rate=16000,
-        n_mels=80,
-        n_fft=400,
-        win_length=400,
-        hop_length=160,
-        power=1.0
-    )
-    amplitude = T.AmplitudeToDB(stype='power', top_db=80)
-
-    spec = mel_spectrogram(waveform).contiguous()
-    # print(f"[Initial Spectrogram Stats] Shape: {spec.shape} / Min: {spec.min()} / Max: {spec.max()} / Mean: {spec.mean()} / Std: {spec.std()}")
-    spec = amplitude(spec)
-    # print(f"[Ampltude to DB] Min: {spec.min()} / Max: {spec.max()} / Mean: {spec.mean()} / Std: {spec.std()}")
-    
-    return  spec
-
-def pad_waveform(waveform, sr = 16000):
-    current_length = waveform.size(1)
-    trimmed_duration = current_length / sr
-    padded_duration, padding, save = get_padded_duration(trimmed_duration, current_length)
-            
-    waveform = torch.nn.functional.pad(waveform, (0, padding), value=1e-6)
-    return waveform, ( padded_duration,  save,  current_length, trimmed_duration)
-
-def reconstruct_and_save(mel_spec, filename, sample_rate):
-    """Reconstruct audio from MEL spectrogram"""
-    try:
-        # Convert to numpy and remove batch dim
-        spec_np = mel_spec.squeeze(0).numpy()  # [80, T]
-        
-        # Inverse Mel scaling (approximate)
-        stft_mag = librosa.feature.inverse.mel_to_stft(
-            spec_np,
-            sr=sample_rate,
-            n_fft=400,
-            power=1.0
-        )
-        
-        # Griffin-Lim reconstruction
-        audio_recon = librosa.griffinlim(
-            stft_mag,
-            n_iter=32,
-            hop_length=160,
-            win_length=400
-        )
-        
-        # Normalize and save
-        audio_recon /= np.max(np.abs(audio_recon)) * 0.9
-        sf.write(filename, audio_recon, sample_rate)
-        
-    except Exception as e:
-        print(f"Reconstruction failed: {str(e)}")
-        raise
-    
-
-def mean_normalization(spectrogram):
-    spectrogram = (spectrogram - spectrogram.mean()) / (spectrogram.std() + 1e-6)
-    return spectrogram
-
-def min_max_normalize(spectrogram):
-    spectrogram_min = spectrogram.min()
-    spectrogram_max = spectrogram.max()
-    normalized_spec = (spectrogram - spectrogram_min) / (spectrogram_max - spectrogram_min + 1e-6)
-    return normalized_spec
-
-def double_vad(audio, sample_rate):
-    # Apply VAD from the front
-    trimmed_front = F.vad(audio, sample_rate=sample_rate, trigger_level=5.0)
-    
-    if trimmed_front.size(1) < 2:
-        print("Less than 2.5")
-        return audio
-    # Reverse the waveform along the time dimension
-    reversed_audio = torch.flip(trimmed_front, dims=[-1])
-    
-    # Apply VAD on reversed audio (trims end of original)
-    trimmed_back = F.vad(reversed_audio, sample_rate=sample_rate, trigger_level=5.0)
-    
-    # Flip back to original orientation
-    final_audio = torch.flip(trimmed_back, dims=[-1])
-    
-    return final_audio
-
-def get_padded_duration(trimmed_duration, current_length):
-    # Define non-overlapping buckets: (min (inclusive), max (exclusive), target_duration)
-    buckets = [
-        (0.0, 1.0, 1.0),      # 0.0 ≤ x < 0.5 → 0.5
-        (1.0, 1.5, 1.5),      # 0.5 ≤ x < 1.0 → 1.0
-        (1.5, 2.0, 2),      # 1.0 ≤ x < 1.5 → 1.5
-        (2.0, 2.5, 2.5),      # 2.0 ≤ x < 2.5 → 2.5
-        (2.5, 3.0, 3),      # 2.5 ≤ x < 3.0 → 3.0
-        (3.0, 3.5, 3.5),      # 3.0 ≤ x < 3.5 → 3.5
-        (3.5, 4.0, 4),      # 3.0 ≤ x < 4.5 → 4.5
-        (4.0, 4.5, 4.5),      # 4.0 ≤ x < 4.5 → 4.5
-        (4.5, 5.0, 5),      # 4.5 ≤ x < 5.0 → 5.0
-        (5.0, 5.5, 5.5),      # 5.0 ≤ x < 5.5 → 5.5
-        (5.5, 6.0, 6),      # 5.5 ≤ x < 6.0 → 6.0
-        (6.0, 6.5, 6.5),      # 6.0 ≤ x < 6.5 → 6.5
-        (6.5, 7.0, 7),      # 6.5 ≤ x < 7.0 → 7.0
-        (7.0, 7.5, 7.5),      # 7.0 ≤ x < 7.5 → 7.5
-        (7.5, 8.0, 8),      # 7.5 ≤ x < 8.0 → 8.0
-        (8.0, 8.5, 8.5),      # 8.0 ≤ x < 8.5 → 8.5
-        (8.5, 9.0, 9),      # 8.5 ≤ x < 9.0 → 9.0
-    ]
-    
-    # Check buckets first
-    for min_dur, max_dur, target in buckets:
-        if min_dur <= trimmed_duration < max_dur:
-            padding = int(target * 16000 - current_length)
-            return target, padding, True
-
-    return trimmed_duration, 0 , False
-
-def plot_waveforms(waveform, trimmed):
-    plt.figure(figsize=(12, 4))
-
-    waveform = waveform[0, :1000]
-    trimmed = trimmed[0, :1000]
-    plt.subplot(1, 2, 1)
-    plt.plot(waveform.squeeze().numpy())
-    plt.title(f"Waveform 1 - {len(waveform.squeeze())/16000:.2f}s")
-    plt.xlabel("Samples")
-    plt.ylabel("Amplitude")
-
-    plt.subplot(1, 2, 2)
-    plt.plot(trimmed.squeeze().numpy())
-    plt.title(f"Waveform 2 - {len(trimmed.squeeze())/16000:.2f}s")
-    plt.xlabel("Samples")
-
-    plt.tight_layout()
-    plt.show()
-
-def plot_spectrogram(orig, normalized, sample_rate=16000):
-    # Plot the raw (unnormalized) spectrogram
-    fig, axs = plt.subplots(2, 2, figsize=(15, 10))
-    
-    # Convert tensors to numpy arrays
-    orig = orig.squeeze(0).cpu().numpy()
-    normalized = normalized.squeeze(0).cpu().numpy()
-    
-    # Plot the raw (unnormalized) spectrogram
-    im0 = axs[0, 0].imshow(orig, aspect='auto', origin='lower', cmap='inferno')
-    axs[0, 0].set_title('Raw Mel Spectrogram')
-    axs[0, 0].set_xlabel('Time Frames')
-    axs[0, 0].set_ylabel('Mel Bands')
-    fig.colorbar(im0, ax=axs[0, 0], format="%+2.0f dB")
-
-    # Plot the normalized spectrogram
-    im1 = axs[0, 1].imshow(normalized, aspect='auto', origin='lower', cmap='inferno')
-    axs[0, 1].set_title('Normalized Mel Spectrogram')
-    axs[0, 1].set_xlabel('Time Frames')
-    axs[0, 1].set_ylabel('Mel Bands')
-    fig.colorbar(im1, ax=axs[0, 1], format="%+2.0f dB")
-
-    # Plot the distribution (histogram) of the raw spectrogram values
-    axs[1, 0].hist(orig.flatten(), bins=80, color='blue', alpha=0.7)
-    axs[1, 0].set_title('Distribution of Raw Mel Spectrogram')
-    axs[1, 0].set_xlabel('Amplitude')
-    axs[1, 0].set_ylabel('Frequency')
-
-    # Plot the distribution (histogram) of the normalized spectrogram values
-    axs[1, 1].hist(normalized.flatten(), bins=80, color='green', alpha=0.7)
-    axs[1, 1].set_title('Distribution of Normalized Mel Spectrogram')
-    axs[1, 1].set_xlabel('Amplitude')
-    axs[1, 1].set_ylabel('Frequency')
-
-    # Adjust layout to avoid overlap
-    plt.tight_layout()
-    plt.show()

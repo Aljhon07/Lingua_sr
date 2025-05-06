@@ -10,9 +10,6 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
     output_path = os.path.join(output_path, config.LANGUAGE)
     file_names = []
     transcriptions = []
-    tokenized_transcriptions = []
-    tokenized_transcriptions_str = []
-
 
     if os.path.exists(output_path):
         print(f"Output file {output_path} already exists. Skipping.")
@@ -31,22 +28,17 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
 
                     transcription = re.sub(remove_chars, '', transcription)
                     transcriptions.append(transcription)
-    # Training the SentencePiece model
+
+                if index > 5000:
+                     break    
+                
     sentences_filename = output_path + "_sentences.txt"
-    if os.path.exists(sentences_filename):
-        print(f"Sentences file {sentences_filename} already exists. Skipping.")
-    else:    
-        os.makedirs(os.path.dirname(sentences_filename), exist_ok=True)
-        with open(sentences_filename, 'w', encoding='utf-8') as sentences_file:
-            for transcript in transcriptions:
-                sentences_file.write(transcript + '\n')
-    lc.train()
+    os.makedirs(os.path.dirname(sentences_filename), exist_ok=True)
+    with open(sentences_filename, 'w', encoding='utf-8') as sentences_file:
+        for transcript in transcriptions:
+            sentences_file.write(transcript + '\n')
     print(f"Transcriptions written to {sentences_filename}")
 
-    for transcription in transcriptions:
-            encoded_ids, encoded_pieces = lc.encode(transcription)
-            tokenized_transcriptions.append(encoded_ids)
-            tokenized_transcriptions_str.append(encoded_pieces)   
 
     df_output = pd.DataFrame({
         'file_name': file_names,
@@ -55,8 +47,6 @@ def process_and_encode_common_voice(common_voice_path, tsv_files, output_path):
         'num_frames': [None] * len(file_names),
         'sample_rate': [None] * len(file_names),
         'transcription': transcriptions,
-        'tokenized_transcription': tokenized_transcriptions,
-        'tokenized_transcription_str': tokenized_transcriptions_str
     })
     tsv_filename = output_path + ".tsv"
 

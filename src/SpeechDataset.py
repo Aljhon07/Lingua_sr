@@ -6,6 +6,8 @@ import pandas as pd
 import os
 import config
 from tools import utils
+from tools import language_corpus as lc
+
 class SpeechDataset(Dataset):
     def __init__(self, data, sample_rate=16000, apply_mask = False):
         self.tsv_file = os.path.join(config.OUTPUT_PATH, f"{config.LANGUAGE}.tsv")
@@ -21,11 +23,9 @@ class SpeechDataset(Dataset):
         spec_path, tokenized_transcript, metadata = self.data[idx]
         audio_path = os.path.join(config.WAVS_PATH, metadata['file_name'] + ".wav")
         
-        # test, _, _ = audio_tools.load_audio(audio_path, torchaudio.info(audio_path), 16000)
-
-        spectrogram = torch.load(spec_path) # [Channels, Mel, Time]
+        spectrogram = torch.load(spec_path) 
         label = tokenized_transcript
-        features_len = spectrogram.shape[2]  # Time dimension
+        features_len = spectrogram.shape[2]  
         label_len = len(label)
         
         if self.apply_mask:
@@ -33,7 +33,7 @@ class SpeechDataset(Dataset):
             spectrogram = self.time_mask(spectrogram)
             
         transcription = metadata['transcription']
-
+        # print(f"{audio_path} | {lc.decode(tokenized_transcript)} | {transcription}")        
         # utils.plot_spectrogram(spectrogram, spectrogram)
         # print(f"Loading spectrogram from {spec_path}")
         # print(f"Audio: {audio_path} | Transcription: {transcription} | Tokenized: {tokenized_transcript}")
@@ -61,7 +61,7 @@ def load_data():
     total_duration = 0
 
     for idx, (key) in enumerate(sorted_keys):
-        if len(categorized_data[key]) < 200:
+        if len(categorized_data[key]) < 400:
             continue
         data_samples = categorized_data[key]
         split_idx = int(0.9 * len(data_samples))
@@ -81,8 +81,20 @@ def load_data():
         print(f"Key: {key} | Dataset Size: {len(train_dataset) + len(val_dataset)} samples | Duration: {ds_duration / 60 / 60:.2f} hours")
         
     print(f"Total Duration: {total_duration / 60 / 60:.2f} hours")
+    
+    # loaders = {'train': train_loaders[:5], 'val': val_loaders[:5]}
 
-    full_overfit_samples = categorized_data[3.0][:500]
+    # loaders = {'train': [train_loaders[3]], 'val': [val_loaders[3]]}
+
+    # loaders = {"train" : train_loaders, "val": val_loaders}
+
+    loaders = overfit_dataset(categorized_data[3.0])
+        
+    return loaders
+
+
+def overfit_dataset(dataset):
+    full_overfit_samples = dataset[:500]
 
     overfit_train_samples = full_overfit_samples[:450]  # First 32 for training
     overfit_val_samples = full_overfit_samples[450:]    # Last 10 for validation
@@ -92,24 +104,10 @@ def load_data():
     overfit_val_dataset = SpeechDataset(overfit_val_samples)
 
     # Create loaders
-    overfit_loader = DataLoader(overfit_dataset, batch_size=25, shuffle=True, collate_fn=collate_fn)
-    overfit_val_loader = DataLoader(overfit_val_dataset, batch_size=25, shuffle=False, collate_fn=collate_fn)
-    
-    # loaders = {'train': train_loaders[:5], 'val': val_loaders[:5]}
+    overfit_loader = DataLoader(overfit_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+    overfit_val_loader = DataLoader(overfit_val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
 
-    # loaders = {'train': [train_loaders[3]], 'val': [val_loaders[3]]}
-
-
-    loaders = {"train" : [overfit_loader], "val": [overfit_val_loader]}
-
-    # for i, (feature, label, feature_len, label_len, string_labels, audio_paths) in enumerate(train_loaders[3]):
-    #     print(f"Features batch shape: {feature.shape}")
-    #     print(f"Labels batch shape: {label.shape}")
-    #     print(f"Feature lengths: {feature_len}")
-    #     print(f"Label lengths: {label_len}")
-    #     break
-        
-    return loaders
+    return {"train": [overfit_loader], "val": [overfit_val_loader]}
 
 def load_data_from_tsv(tsv_file):
     if not os.path.exists(tsv_file):
@@ -128,13 +126,13 @@ def load_data_from_tsv(tsv_file):
         
         padded_duration = row['padded_duration']
         transcription = row['transcription']
-        tokenized_transcription = row['tokenized_transcription']
-        tokenized_transcription = [int(token) for token in tokenized_transcription.split()]
+
+        tokenized_transcription, tokenized_transcription_str = lc.encode(transcription)
         
         metadata = {
             'transcription': transcription,
             'tokenized_transcription': tokenized_transcription,
-            'tokenzed_transcription_str': row['tokenized_transcription_str'],
+            'tokenzed_transcription_str': tokenized_transcription_str,
             'duration': row['duration'],
             'padded_duration': padded_duration,
             'num_frames': row['num_frames'],

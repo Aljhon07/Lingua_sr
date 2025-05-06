@@ -96,7 +96,7 @@ def double_vad(audio, sample_rate):
 def extract_spectrogram(waveform):
     mel_spectrogram = T.MelSpectrogram(
         sample_rate=16000,
-        n_mels=80,
+        n_mels=128,
         n_fft=400,
         win_length=400,
         hop_length=160,

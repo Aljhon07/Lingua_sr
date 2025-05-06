@@ -37,10 +37,10 @@ class ResidualBlock(nn.Module):
         x = self.relu(x)
         if verbose:
             print(f"[After ReLU] Shape: {x.shape} | Min: {x.min()} | Max: {x.max()} | Std: {x.std()} | Mean: {x.mean()}")
-        if self.dropout is not None:
-            x = self.dropout(x)
-            if verbose:
-                print("Dropout2d")
+        # if self.dropout is not None:
+        #     x = self.dropout(x)
+        #     if verbose:
+        #         print("Dropout2d")
         x = self.conv2(x)
         x = self.norm2(x)
 
@@ -78,8 +78,7 @@ class SpeechRecognitionModel(nn.Module):
         )
         
         # Remove Dropout, add LayerNorm
-        self.fc = nn.Linear(128*8, vocab_size)
-        nn.init.zeros_(self.fc.bias)
+        self.fc = nn.Linear(128 * 8, vocab_size)
         
     def _make_layer(self, in_channels, out_channels, blocks, dropout=None):
         layers = []

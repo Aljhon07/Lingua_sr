@@ -2,7 +2,7 @@ import os
 import sentencepiece as spm
 import config
 
-def train(model_type='char', vocab_size=50,model_prefix = config.LANGUAGE,):
+def train(model_type='char', vocab_size=config.H_PARAMS["VOCAB_SIZE"],model_prefix = config.LANGUAGE,):
     input_file = os.path.join(config.OUTPUT_PATH, config.LANGUAGE+"_sentences.txt")
     print(f"Training SentencePiece model with input file: {input_file}")
     model_path = os.path.join(config.OUTPUT_PATH, model_prefix)
@@ -25,7 +25,7 @@ def encode(input_text):
         sp = spm.SentencePieceProcessor(model_file=model_file)
         encoded = sp.encode_as_ids(input_text) # or out_type=int for IDs
         encoded_str = sp.encode_as_pieces(input_text) # or out_type=str for pieces
-        return ' '.join(map(str, encoded)), ' '.join(encoded_str)
+        return encoded, ' '.join(encoded_str)
     except Exception as e:
         print(f"Error encoding with SentencePiece: {e}")
         return None
